@@ -1,0 +1,22 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+from users.models import Profile
+
+
+class Question(models.Model):
+    author_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, blank=True, null=True,
+                                       related_name='question_author_profile')
+    author_ip = models.CharField(max_length=20)
+    target_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='question_target_profile')
+    content = models.CharField(max_length=100)
+    refusal_status = models.BooleanField(default=False)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+
+class Answer(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question')
+    author_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='answer_author_profile')
+    author_ip = models.CharField(max_length=20)
+    content = models.CharField(max_length=100)
+    created_date = models.DateTimeField(auto_now_add=True)
