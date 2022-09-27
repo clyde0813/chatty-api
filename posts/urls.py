@@ -1,10 +1,12 @@
 from django.urls import path
+from .views import QuestionGetAPIView, QuestionCreateAPIView, QuestionUnansweredAPIView, AnswerCreateAPIView, \
+    QuestionRejectedAPIView
 
-from rest_framework import routers
+urlpatterns = [
+    path('question/rejected', QuestionRejectedAPIView.as_view()),
+    path('question/<str:username>', QuestionGetAPIView.as_view()),
+    path('question/unanswered/', QuestionUnansweredAPIView.as_view()),
+    path('question', QuestionCreateAPIView.as_view()),
 
-from .views import QuestionViewSet
-
-routers = routers.SimpleRouter()
-routers.register('question', QuestionViewSet)
-
-urlpatterns = routers.urls
+    path('answer', AnswerCreateAPIView.as_view())
+]

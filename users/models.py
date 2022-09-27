@@ -9,14 +9,16 @@ from rest_framework.authtoken.models import Token
 
 
 # Create your models here.
+
+
 class Profile(models.Model):
     username = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     follower = models.ManyToManyField(User, related_name='follower')
     following = models.ManyToManyField(User, related_name='following')
-    image = models.ImageField(upload_to='profile/', default='default.png')
+    profile_image = models.ImageField(upload_to='profile/', default='default.png')
+    profile_message = models.CharField(max_length=50, blank=True, null=True)
     deactivated_status = models.BooleanField(default=False)
     ban_until = models.DateTimeField(null=True, blank=True)
-    test = models.CharField(max_length=10, blank=True, default='1')
     recent_access_ip = models.CharField(max_length=20, blank=True)
 
 

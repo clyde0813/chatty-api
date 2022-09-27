@@ -11,8 +11,9 @@ from rest_framework.response import Response
 from rest_framework.validators import UniqueValidator
 
 from users.models import Profile, Report, BannedIp, TokenExpiration
-
+from posts.models import Question, Answer
 from chatty_drf.ip_address_gatherer import get_client_ip
+from drf_yasg.utils import swagger_auto_schema
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -74,14 +75,19 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='username.username', read_only=True, required=False)
+    username = serializers.CharField(source='username.username', required=False)
     user_id = serializers.IntegerField(source='username_id', read_only=True, required=False)
+    response_rate = serializers.SerializerMethodField('get_response_rate', read_only=True)
+    question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
+    profile_image = serializers.ImageField(required=False)
     follower = serializers.SerializerMethodField('get_follower_names', read_only=True, required=False)
     following = serializers.SerializerMethodField('get_following_names', read_only=True, required=False)
 
     class Meta:
         model = Profile
-        fields = ('username', 'user_id', 'image', 'test', 'follower', 'following')
+        fields = (
+            'username', 'user_id', 'response_rate', 'question_count', 'profile_image', 'profile_message', 'follower',
+            'following')
 
     def get_follower_names(self, obj):
         group_name_list = [i.username for i in obj.follower.all()]
@@ -91,8 +97,22 @@ class ProfileSerializer(serializers.ModelSerializer):
         group_name_list = [i.username for i in obj.following.all()]
         return group_name_list
 
+    def get_response_rate(self, obj):
+        return round(Question.objects.filter(target_profile__username=obj.username,
+                                             answer__isnull=False).count() / Question.objects.filter(
+            target_profile__username=obj.username).count() * 100)
+
+    def get_question_count(self, obj):
+        context = {'answered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=False,
+                                                       refusal_status=False).count(),
+                   'unanswered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
+                                                         refusal_status=False).count(),
+                   'rejected': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
+                                                       refusal_status=True).count()}
+        return context
+
 
 class ProfileAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('image', 'deactivated_status', 'ban_until', 'test', 'recent_access_ip')
+        fields = ('profile_image', 'profile_message', 'deactivated_status', 'ban_until', 'recent_access_ip')

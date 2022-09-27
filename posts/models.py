@@ -15,7 +15,7 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question')
+    question = models.OneToOneField(Question, on_delete=models.CASCADE, related_name='answer')
     author_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='answer_author_profile')
     author_ip = models.CharField(max_length=20)
     content = models.CharField(max_length=100)
