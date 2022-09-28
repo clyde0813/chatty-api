@@ -98,9 +98,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         return group_name_list
 
     def get_response_rate(self, obj):
-        return round(Question.objects.filter(target_profile__username=obj.username,
-                                             answer__isnull=False).count() / Question.objects.filter(
-            target_profile__username=obj.username).count() * 100)
+        if Question.objects.filter(
+                target_profile__username=obj.username).exists():
+            return round(Question.objects.filter(target_profile__username=obj.username,
+                                                 answer__isnull=False).count() / Question.objects.filter(
+                target_profile__username=obj.username).count() * 100)
+        else:
+            return 0
 
     def get_question_count(self, obj):
         context = {'answered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=False,
