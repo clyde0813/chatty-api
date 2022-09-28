@@ -1,3 +1,5 @@
+from random import choice
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -11,6 +13,7 @@ from rest_framework.response import Response
 
 from users.models import Profile
 from .models import Question, Answer
+from chats.models import NounList, AdjectiveList
 from .permissions import CustomReadOnly
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
     AnswerCreateSerializer
@@ -41,10 +44,13 @@ class QuestionCreateAPIView(GenericAPIView):
         if serializer.is_valid():
             target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
             if request.user.is_authenticated:
-                serializer.save(author_profile=Profile.objects.get(username__username=request.user), author_ip=get_client_ip(request), target_profile=target_profile)
+                serializer.save(author_profile=Profile.objects.get(username__username=request.user),
+                                author_ip=get_client_ip(request), target_profile=target_profile)
             else:
-                serializer.save(author_ip=get_client_ip(request), refusal_status=False, target_profile=target_profile)
-            return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
+                serializer.save(author_ip=get_client_ip(request), refusal_status=False, target_profile=target_profile,
+                                nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
+                                         choice(NounList.objects.values_list('word'))[0])
+                return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '등록실패'}, status=status.HTTP_400_BAD_REQUEST)
 
