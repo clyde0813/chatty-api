@@ -26,13 +26,13 @@ class QuestionGetAPIView(GenericAPIView):
 
     @swagger_auto_schema(tags=['질문 리스트'])
     def get(self, request, username):
-        try:
+        if Profile.objects.filter(username__username=username).exists():
             instance = self.queryset.filter(target_profile__username__username=username, answer__isnull=False,
                                             refusal_status=False)
             serializer = QuestionSerializer(instance, many=True)
             return Response(serializer.data)
-        except ObjectDoesNotExist:
-            return Response({'error': '사용자 없음'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class QuestionCreateAPIView(GenericAPIView):
