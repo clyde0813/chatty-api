@@ -12,7 +12,7 @@ from rest_framework.authtoken.models import Token
 
 
 class Profile(models.Model):
-    username = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    username = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profile_username')
     follower = models.ManyToManyField(User, related_name='follower')
     following = models.ManyToManyField(User, related_name='following')
     profile_image = models.ImageField(upload_to='profile/', default='default.png')
@@ -20,6 +20,10 @@ class Profile(models.Model):
     deactivated_status = models.BooleanField(default=False)
     ban_until = models.DateTimeField(null=True, blank=True)
     recent_access_ip = models.CharField(max_length=20, blank=True)
+
+
+class ForbiddenUsername(models.Model):
+    username = models.CharField(max_length=200)
 
 
 class TokenExpiration(models.Model):

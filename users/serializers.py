@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.validators import UniqueValidator
 
-from users.models import Profile, Report, BannedIp, TokenExpiration
+from users.models import Profile, Report, BannedIp, TokenExpiration, ForbiddenUsername
 from posts.models import Question, Answer
 from chatty_drf.ip_address_gatherer import get_client_ip
 from drf_yasg.utils import swagger_auto_schema
@@ -31,6 +31,14 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "비밀번호가 일치하지 않습니다."})
+        restricted_username_list = ForbiddenUsername.objects.values_list()
+        if 'username' in data:
+            if User.objects.filter(username=data['username']).exists():
+                raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
+            else:
+                for i in restricted_username_list:
+                    if i[1] in data['username'].lower():
+                        raise serializers.ValidationError({'error': '사용불가 아이디입니다.'})
         return data
 
     def create(self, validated_data):
@@ -114,6 +122,16 @@ class ProfileSerializer(serializers.ModelSerializer):
                    'rejected': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
                                                        refusal_status=True).count()}
         return context
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=10, required=False)
+    profile_message = serializers.CharField(max_length=50, required=False)
+    profile_image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Profile
+        fields = ('username', 'profile_message', 'profile_image')
 
 
 class ProfileAdminSerializer(serializers.ModelSerializer):

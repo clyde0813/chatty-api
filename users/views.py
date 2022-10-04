@@ -10,9 +10,9 @@ from rest_framework.authtoken.models import Token
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Profile, Report
+from .models import Profile, Report, ForbiddenUsername
 from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileAdminSerializer
+    ProfileAdminSerializer, ProfileUpdateSerializer
 from .permissions import CustomReadOnly
 
 
@@ -42,12 +42,44 @@ class LogoutView(generics.GenericAPIView):
         return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
 
 
-class ProfileView(generics.RetrieveUpdateAPIView):
-    permission_classes = [CustomReadOnly]
+class ProfileGetAPIView(generics.GenericAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    lookup_field = 'username__username'
-    lookup_url_kwarg = 'username'
+
+    @swagger_auto_schema(tags=['프로필 조회'])
+    def get(self, request, username):
+        if Profile.objects.filter(username__username=username).exists():
+            instance = self.queryset.filter(username__username=username).get()
+            serializer = ProfileSerializer(instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProfileUpdateAPIView(generics.GenericAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileUpdateSerializer
+
+    @swagger_auto_schema(tags=['프로필 업데이트'])
+    def put(self, request):
+        if request.user.is_authenticated:
+            instance = self.queryset.filter(username=request.user)
+            restricted_username_list = ForbiddenUsername.objects.values_list()
+            serializer = ProfileUpdateSerializer(request.data)
+            if 'username' in serializer.data:
+                if User.objects.filter(username=serializer.data['username']).exists():
+                    return Response({'error': '이미 사용중인 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    for i in restricted_username_list:
+                        if i[1] in serializer.data['username'].lower():
+                            return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
+            if 'profile_message' in serializer.data:
+                instance.update(profile_message=serializer.data['profile_message'])
+            return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
+
+        else:
+            return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileAdminView(generics.RetrieveUpdateAPIView):

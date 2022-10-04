@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 class QuestionGetAPIView(GenericAPIView):
     queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
 
     @swagger_auto_schema(tags=['질문 리스트'])
     def get(self, request, username):
@@ -50,7 +51,7 @@ class QuestionCreateAPIView(GenericAPIView):
                 serializer.save(author_ip=get_client_ip(request), refusal_status=False, target_profile=target_profile,
                                 nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
                                          choice(NounList.objects.values_list('word'))[0])
-                return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
+            return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '등록실패'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -58,6 +59,7 @@ class QuestionCreateAPIView(GenericAPIView):
 class QuestionUnansweredAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
 
     @swagger_auto_schema(tags=['미답변 질문 리스트'])
     def get(self, request):
