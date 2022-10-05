@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from users.models import Profile
 from .models import Question, Answer
-from chats.models import NounList, AdjectiveList
+from chats.models import NounList, AdjectiveList, ChatRoom
 from .permissions import CustomReadOnly
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
     AnswerCreateSerializer
@@ -58,11 +58,15 @@ class QuestionCreateAPIView(GenericAPIView):
             target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
             if request.user.is_authenticated:
                 serializer.save(author_profile=Profile.objects.get(username__username=request.user),
-                                author_ip=get_client_ip(request), target_profile=target_profile)
+                                author_ip=get_client_ip(request), target_profile=target_profile,
+                                chatroom_password=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
+                                                  choice(NounList.objects.values_list('word'))[0])
             else:
                 serializer.save(author_ip=get_client_ip(request), refusal_status=False, target_profile=target_profile,
                                 nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                         choice(NounList.objects.values_list('word'))[0])
+                                         choice(NounList.objects.values_list('word'))[0],
+                                chatroom_password=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
+                                                  choice(NounList.objects.values_list('word'))[0])
             return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '등록실패'}, status=status.HTTP_400_BAD_REQUEST)
@@ -133,10 +137,11 @@ class AnswerCreateAPIView(GenericAPIView):
 
     @swagger_auto_schema(tags=['답변 등록'])
     def post(self, request):
-        question_status = Question.objects.filter(target_profile__username=request.user,
-                                                  pk=request.data['question_id'], answer__isnull=True,
-                                                  refusal_status=False, delete_status=False).exists()
-        if question_status is True:
+        question_instance = Question.objects.filter(target_profile__username=request.user,
+                                                    pk=request.data['question_id'], answer__isnull=True,
+                                                    refusal_status=False, delete_status=False)
+        if question_instance.exists() is True:
+            ChatRoom.objects.create(question=question_instance.get())
             Answer.objects.create(question_id=request.data['question_id'],
                                   author_profile=Profile.objects.get(username=request.user),
                                   author_ip=get_client_ip(request), content=request.data['content'])

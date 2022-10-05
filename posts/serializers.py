@@ -22,7 +22,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = (
             'pk', 'author_profile', 'author_ip', 'nickname', 'content', 'created_date',
-            'answer_content')
+            'answer_content', 'chat_room')
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
