@@ -3144,7 +3144,7 @@ const Ms = {
             console.error(n)
         }
     }
-}, z0 = "", WO = e => B0.create({baseURL: z0, ...e}), YO = e => {
+}, z0 = "/api/v1", WO = e => B0.create({baseURL: z0, ...e}), YO = e => {
     const t = Ms.get("CHATTY_ACCESS_TOKEN");
     return B0.create({baseURL: z0, headers: {Authorization: "Token " + t}, ...e})
 }, si = WO({credentials: "include"}), Dl = YO({credentials: "include"});
