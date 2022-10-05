@@ -23,6 +23,8 @@ from collections import OrderedDict
 
 
 class CustomPagination(PageNumberPagination):
+    page_size = 5
+
     def get_paginated_response(self, data):
         return Response({'next': self.page.next_page_number() if self.page.has_next() else None,
                          'previous': self.page.previous_page_number() if self.page.has_previous() else None,
@@ -37,9 +39,8 @@ class QuestionGetAPIView(GenericAPIView):
     def get(self, request, username):
         if Profile.objects.filter(username__username=username).exists():
             instance = self.queryset.filter(target_profile__username__username=username, answer__isnull=False,
-                                            refusal_status=False)
+                                            refusal_status=False).order_by('-created_date')
             paginator = CustomPagination()
-            paginator.page_size = 5
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             return paginator.get_paginated_response(serializer.data)
@@ -76,9 +77,8 @@ class QuestionUnansweredAPIView(GenericAPIView):
     def get(self, request):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
-                                            refusal_status=False)
+                                            refusal_status=False).order_by('-created_date')
             paginator = CustomPagination()
-            paginator.page_size = 5
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             return paginator.get_paginated_response(serializer.data)
@@ -95,9 +95,8 @@ class QuestionRejectedAPIView(GenericAPIView):
     def get(self, request):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
-                                            refusal_status=True)
+                                            refusal_status=True).order_by('-created_date')
             paginator = CustomPagination()
-            paginator.page_size = 5
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             return paginator.get_paginated_response(serializer.data)
