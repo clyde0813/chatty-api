@@ -13,6 +13,7 @@ class Question(models.Model):
     content = models.CharField(max_length=100)
     refusal_status = models.BooleanField(default=False)
     created_date = models.DateTimeField(auto_now_add=True)
+    delete_status = models.BooleanField(default=False)
 
 
 class Answer(models.Model):

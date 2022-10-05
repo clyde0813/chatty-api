@@ -39,7 +39,7 @@ class QuestionGetAPIView(GenericAPIView):
     def get(self, request, username):
         if Profile.objects.filter(username__username=username).exists():
             instance = self.queryset.filter(target_profile__username__username=username, answer__isnull=False,
-                                            refusal_status=False).order_by('-created_date')
+                                            refusal_status=False, delete_status=False).order_by('-created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
@@ -67,6 +67,19 @@ class QuestionCreateAPIView(GenericAPIView):
         else:
             return Response({'error': '등록실패'}, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(tags=['질문 삭제'])
+    def delete(self, request):
+        if request.user.is_authenticated:
+            question_object = Question.objects.filter(target_profile__username=request.user,
+                                                      pk=request.data['question_id'], delete_status=False)
+            if question_object.exists() is True:
+                question_object.update(delete_status=True)
+                return Response({'info': '질문 삭제 완료'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': '해당 질문 없음'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class QuestionUnansweredAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -77,7 +90,7 @@ class QuestionUnansweredAPIView(GenericAPIView):
     def get(self, request):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
-                                            refusal_status=False).order_by('-created_date')
+                                            refusal_status=False, delete_status=False).order_by('-created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
@@ -95,7 +108,7 @@ class QuestionRejectedAPIView(GenericAPIView):
     def get(self, request):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
-                                            refusal_status=True).order_by('-created_date')
+                                            refusal_status=True, delete_status=False).order_by('-created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
@@ -106,7 +119,7 @@ class QuestionRejectedAPIView(GenericAPIView):
     @swagger_auto_schema(tags=['질문 거절'])
     def post(self, request):
         question_object = Question.objects.filter(target_profile__username=request.user, pk=request.data['question_id'],
-                                                  answer__isnull=True, refusal_status=False)
+                                                  answer__isnull=True, refusal_status=False, delete_status=False)
         if question_object.exists() is True:
             question_object.update(refusal_status=True)
             return Response({'info': '질문 거절 완료'}, status=status.HTTP_200_OK)
@@ -122,7 +135,7 @@ class AnswerCreateAPIView(GenericAPIView):
     def post(self, request):
         question_status = Question.objects.filter(target_profile__username=request.user,
                                                   pk=request.data['question_id'], answer__isnull=True,
-                                                  refusal_status=False).exists()
+                                                  refusal_status=False, delete_status=False).exists()
         if question_status is True:
             Answer.objects.create(question_id=request.data['question_id'],
                                   author_profile=Profile.objects.get(username=request.user),
