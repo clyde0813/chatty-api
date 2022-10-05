@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-from .serializers import ChatRoomEnteranceSerializer, ChatSerializer
+from .serializers import ChatRoomEnteranceSerializer, ChatSerializer, ChatRoomSerializer
 from .models import ChatRoom, Chat
 
 
@@ -11,6 +11,19 @@ from .models import ChatRoom, Chat
 class ChatRoomEnteranceAPIView(GenericAPIView):
     serializer_class = ChatRoomEnteranceSerializer
     queryset = ChatRoom.objects.all()
+
+    @swagger_auto_schema(tags=['채팅방 목록'])
+    def get(self, request):
+        if request.user.is_authenticated:
+            if self.queryset.filter(question__target_profile__username=request.user).exists():
+                instance = self.queryset.filter(question__target_profile__username=request.user).all()
+                serializer = ChatRoomSerializer(instance, many=True)
+                return Response(serializer.data)
+            else:
+                return Response({'error': '채팅방 없음'})
+
+        else:
+            return Response({'error': '로그인이 필요한 서비스입니다.'})
 
     @swagger_auto_schema(tags=['채팅방 입장'])
     def post(self, request):

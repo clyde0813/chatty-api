@@ -5,6 +5,12 @@ from .models import Chat, ChatRoom
 from users.models import Profile
 
 
+class ChatRoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields = ('pk', 'question_id', 'created_date')
+
+
 class ChatRoomEnteranceSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(required=True)
     chatroom_password = serializers.CharField(max_length=30, required=False)
