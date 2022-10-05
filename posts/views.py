@@ -8,9 +8,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.generics import GenericAPIView, CreateAPIView
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import CursorPagination, PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from django_filters.rest_framework import DjangoFilterBackend
 from users.models import Profile
 from .models import Question, Answer
 from chats.models import NounList, AdjectiveList
@@ -19,6 +20,13 @@ from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionR
     AnswerCreateSerializer
 from chatty_drf.ip_address_gatherer import get_client_ip
 from collections import OrderedDict
+
+
+class CustomPagination(PageNumberPagination):
+    def get_paginated_response(self, data):
+        return Response({'next': self.page.next_page_number() if self.page.has_next() else None,
+                         'previous': self.page.previous_page_number() if self.page.has_previous() else None,
+                         'results': data})
 
 
 class QuestionGetAPIView(GenericAPIView):
@@ -30,8 +38,11 @@ class QuestionGetAPIView(GenericAPIView):
         if Profile.objects.filter(username__username=username).exists():
             instance = self.queryset.filter(target_profile__username__username=username, answer__isnull=False,
                                             refusal_status=False)
-            serializer = QuestionSerializer(instance, many=True)
-            return Response(serializer.data)
+            paginator = CustomPagination()
+            paginator.page_size = 5
+            result_page = paginator.paginate_queryset(instance, request)
+            serializer = QuestionSerializer(result_page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         else:
             return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -66,8 +77,11 @@ class QuestionUnansweredAPIView(GenericAPIView):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
                                             refusal_status=False)
-            serializer = QuestionSerializer(instance, many=True)
-            return Response(serializer.data)
+            paginator = CustomPagination()
+            paginator.page_size = 5
+            result_page = paginator.paginate_queryset(instance, request)
+            serializer = QuestionSerializer(result_page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         except ObjectDoesNotExist:
             return Response({'error': '사용자 없음'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -82,8 +96,11 @@ class QuestionRejectedAPIView(GenericAPIView):
         try:
             instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
                                             refusal_status=True)
-            serializer = QuestionSerializer(instance, many=True)
-            return Response(serializer.data)
+            paginator = CustomPagination()
+            paginator.page_size = 5
+            result_page = paginator.paginate_queryset(instance, request)
+            serializer = QuestionSerializer(result_page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         except ObjectDoesNotExist:
             return Response({'error': '사용자 없음'}, status=status.HTTP_400_BAD_REQUEST)
 
