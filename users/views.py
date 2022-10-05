@@ -67,12 +67,12 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             restricted_username_list = ForbiddenUsername.objects.values_list()
             serializer = ProfileUpdateSerializer(request.data)
             if 'username' in serializer.data:
+                for i in restricted_username_list:
+                    if i[1] in serializer.data['username'].lower():
+                        return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 if User.objects.filter(username=serializer.data['username']).exists():
                     return Response({'error': '이미 사용중인 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    for i in restricted_username_list:
-                        if i[1] in serializer.data['username'].lower():
-                            return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
                     User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])

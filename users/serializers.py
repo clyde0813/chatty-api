@@ -32,13 +32,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "비밀번호가 일치하지 않습니다."})
         restricted_username_list = ForbiddenUsername.objects.values_list()
-        if 'username' in data:
-            if User.objects.filter(username=data['username']).exists():
-                raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
-            else:
-                for i in restricted_username_list:
-                    if i[1] in data['username'].lower():
-                        raise serializers.ValidationError({'error': '사용불가 아이디입니다.'})
+        for i in restricted_username_list:
+            if i[1] in data['username'].lower():
+                raise serializers.ValidationError({'error': '사용불가 아이디입니다.'})
+        if User.objects.filter(username=data['username']).exists():
+            raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
         return data
 
     def create(self, validated_data):
