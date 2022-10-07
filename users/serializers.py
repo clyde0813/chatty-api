@@ -114,11 +114,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_question_count(self, obj):
         context = {'answered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=False,
-                                                       refusal_status=False).count(),
+                                                       refusal_status=False, delete_status=False).count(),
                    'unanswered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
-                                                         refusal_status=False).count(),
+                                                         refusal_status=False, delete_status=False).count(),
                    'rejected': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
-                                                       refusal_status=True).count()}
+                                                       refusal_status=True, delete_status=False).count()}
         return context
 
 
@@ -136,3 +136,11 @@ class ProfileAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('profile_image', 'profile_message', 'deactivated_status', 'ban_until', 'recent_access_ip')
+
+
+class FollowUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=20, required=True)
+
+    class Meta:
+        model = Profile
+        fields = ('username',)

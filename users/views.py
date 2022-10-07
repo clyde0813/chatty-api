@@ -12,7 +12,7 @@ from drf_yasg import openapi
 
 from .models import Profile, Report, ForbiddenUsername
 from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileAdminSerializer, ProfileUpdateSerializer
+    ProfileAdminSerializer, ProfileUpdateSerializer, FollowUserSerializer
 from .permissions import CustomReadOnly
 
 
@@ -90,18 +90,30 @@ class ProfileAdminView(generics.RetrieveUpdateAPIView):
     lookup_url_kwarg = 'username'
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def follow_user(request, username):
-    target = get_object_or_404(User, username=username)
-    request_user = Profile.objects.get(username=request.user)
-    if request.user == target:
-        return Response({'info': '본인은 팔로우 불가합니다.'}, status=status.HTTP_200_OK)
-    elif target.profile_username.follower.filter(username=request.user).exists():
-        target.profile_username.follower.remove(request.user)
-        request_user.following.remove(target)
-        return Response({'info': '팔로우취소되었습니다.'}, status=status.HTTP_200_OK)
-    else:
-        target.profile_username.follower.add(request.user)
-        request_user.following.add(target)
-        return Response({'info': '팔로우되었습니다.'}, status=status.HTTP_200_OK)
+class FollowUserView(generics.GenericAPIView):
+    queryset = Profile
+    serializer_class = FollowUserSerializer
+
+    @swagger_auto_schema(tages=['사용자 팔로우'])
+    def post(self, request):
+        serializer = FollowUserSerializer(data=request.data)
+        if request.user.is_authenticated:
+            if serializer.is_valid():
+                target = get_object_or_404(User, username=serializer.data['username'])
+                request_user = Profile.objects.get(username=request.user)
+                if request.user == target:
+                    return Response({'info': '본인은 팔로우 불가합니다.'}, status=status.HTTP_200_OK)
+                elif target.profile_username.follower.filter(username=request.user).exists():
+                    target.profile_username.follower.remove(request.user)
+                    request_user.following.remove(target)
+                    return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
+                                    status=status.HTTP_200_OK)
+                else:
+                    target.profile_username.follower.add(request.user)
+                    request_user.following.add(target)
+                    return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
+                                    status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'key value 오류'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)

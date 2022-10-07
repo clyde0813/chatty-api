@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegisterView, LoginView, LogoutView, ProfileGetAPIView, ProfileUpdateAPIView, ProfileAdminView, \
-    follow_user
+    FollowUserView
 
 urlpatterns = [
     path('register', RegisterView.as_view()),
@@ -9,5 +9,5 @@ urlpatterns = [
     path('profile', ProfileUpdateAPIView.as_view()),
     path('profile/<str:username>', ProfileGetAPIView.as_view()),
     # path('profile/admin/<slug:username>', ProfileAdminView.as_view()),
-    path('follow/<slug:username>', follow_user)
+    path('follow', FollowUserView.as_view())
 ]
