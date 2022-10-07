@@ -97,11 +97,11 @@ def follow_user(request, username):
     request_user = Profile.objects.get(username=request.user)
     if request.user == target:
         return Response({'info': '본인은 팔로우 불가합니다.'}, status=status.HTTP_200_OK)
-    elif target.profile.follower.filter(username=request.user).exists():
-        target.profile.follower.remove(request.user)
+    elif target.profile_username.follower.filter(username=request.user).exists():
+        target.profile_username.follower.remove(request.user)
         request_user.following.remove(target)
         return Response({'info': '팔로우취소되었습니다.'}, status=status.HTTP_200_OK)
     else:
-        target.profile.follower.add(request.user)
+        target.profile_username.follower.add(request.user)
         request_user.following.add(target)
         return Response({'info': '팔로우되었습니다.'}, status=status.HTTP_200_OK)

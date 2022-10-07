@@ -15,13 +15,12 @@ class AnswerCreateSerializer(serializers.ModelSerializer):
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    author_profile = ProfileSerializer(read_only=True)
     answer_content = serializers.CharField(read_only=True, source='answer.content')
 
     class Meta:
         model = Question
         fields = (
-            'pk', 'author_profile', 'author_ip', 'nickname', 'content', 'created_date',
+            'pk', 'nickname', 'content', 'created_date',
             'answer_content', 'chat_room')
 
 

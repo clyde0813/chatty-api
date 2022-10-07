@@ -56,20 +56,21 @@ class QuestionCreateAPIView(GenericAPIView):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
             target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
-            if request.user.is_authenticated:
-                serializer.save(author_profile=Profile.objects.get(username__username=request.user),
-                                author_ip=get_client_ip(request), target_profile=target_profile,
-                                chatroom_password=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                                  choice(NounList.objects.values_list('word'))[0])
-            else:
-                serializer.save(author_ip=get_client_ip(request), refusal_status=False, target_profile=target_profile,
-                                nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                         choice(NounList.objects.values_list('word'))[0],
-                                chatroom_password=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                                  choice(NounList.objects.values_list('word'))[0])
-            return Response({'info': '등록완료'}, status=status.HTTP_200_OK)
+            question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
+                                              target_profile=target_profile,
+                                              nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
+                                                       choice(NounList.objects.values_list('word'))[0],
+                                              chatroom_password=choice(AdjectiveList.objects.values_list('word'))[
+                                                                    0] + ' ' +
+                                                                choice(NounList.objects.values_list('word'))[0])
+            return Response(
+                {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
+                 'content': question_object.content,
+                 'created_date': question_object.created_date,
+                 'target_profile': question_object.target_profile.username.username},
+                status=status.HTTP_200_OK)
         else:
-            return Response({'error': '등록실패'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '질문 등록실패'}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(tags=['질문 삭제'])
     def delete(self, request):
@@ -125,10 +126,15 @@ class QuestionRejectedAPIView(GenericAPIView):
         question_object = Question.objects.filter(target_profile__username=request.user, pk=request.data['question_id'],
                                                   answer__isnull=True, refusal_status=False, delete_status=False)
         if question_object.exists() is True:
+            question_data = question_object.get()
             question_object.update(refusal_status=True)
-            return Response({'info': '질문 거절 완료'}, status=status.HTTP_200_OK)
+            return Response({'info': '질문 거절 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
+                             'content': question_data.content,
+                             'created_date': question_data.created_date,
+                             'target_profile': question_data.target_profile.username.username},
+                            status=status.HTTP_200_OK)
         else:
-            return Response({'error': '400 error'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AnswerCreateAPIView(GenericAPIView):
@@ -141,10 +147,16 @@ class AnswerCreateAPIView(GenericAPIView):
                                                     pk=request.data['question_id'], answer__isnull=True,
                                                     refusal_status=False, delete_status=False)
         if question_instance.exists() is True:
+            question_data = question_instance.get()
             ChatRoom.objects.create(question=question_instance.get())
             Answer.objects.create(question_id=request.data['question_id'],
                                   author_profile=Profile.objects.get(username=request.user),
                                   author_ip=get_client_ip(request), content=request.data['content'])
-            return Response({'info': '답변 등록 완료'}, status=status.HTTP_200_OK)
+            return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
+                             'content': question_data.content,
+                             'created_date': question_data.created_date,
+                             'target_profile': question_data.target_profile.username.username,
+                             'chatroom_id': question_data.chat_room.pk},
+                            status=status.HTTP_200_OK)
         else:
-            return Response({'error': '400 error'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
