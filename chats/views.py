@@ -1,10 +1,20 @@
 from django.shortcuts import render
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from .serializers import ChatRoomEnteranceSerializer, ChatSerializer, ChatRoomSerializer
 from .models import ChatRoom, Chat
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 5
+
+    def get_paginated_response(self, data):
+        return Response({'next': self.page.next_page_number() if self.page.has_next() else None,
+                         'previous': self.page.previous_page_number() if self.page.has_previous() else None,
+                         'results': data})
 
 
 # Create your views here.
@@ -16,9 +26,11 @@ class ChatRoomEnteranceAPIView(GenericAPIView):
     def get(self, request):
         if request.user.is_authenticated:
             if self.queryset.filter(question__target_profile__username=request.user).exists():
-                instance = self.queryset.filter(question__target_profile__username=request.user).all()
-                serializer = ChatRoomSerializer(instance, many=True)
-                return Response(serializer.data)
+                instance = self.queryset.filter(question__target_profile__username=request.user).order_by('-pk')
+                paginator = CustomPagination()
+                result_page = paginator.paginate_queryset(instance, request)
+                serializer = ChatRoomSerializer(result_page, many=True)
+                return paginator.get_paginated_response(serializer.data)
             else:
                 return Response({'error': '채팅방 없음'})
 

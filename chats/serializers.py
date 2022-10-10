@@ -6,9 +6,21 @@ from users.models import Profile
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
+    nickname = serializers.SerializerMethodField('nickname_picker')
+    last_message = serializers.SerializerMethodField('last_message_picker')
+
     class Meta:
         model = ChatRoom
-        fields = ('pk', 'question_id', 'created_date')
+        fields = ('pk', 'question_id', 'created_date', 'nickname', 'last_message')
+
+    def nickname_picker(self, obj):
+        return obj.question.nickname
+
+    def last_message_picker(self, obj):
+        if obj.chats.last():
+            return obj.chats.last().content
+        else:
+            return None
 
 
 class ChatRoomEnteranceSerializer(serializers.ModelSerializer):
