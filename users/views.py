@@ -73,7 +73,10 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 if User.objects.filter(username=serializer.data['username']).exists():
                     return Response({'error': '이미 사용중인 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
+                    try:
+                        User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
+                    except Exception as e:
+                        return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])
             if 'profile_image' in serializer.data:
