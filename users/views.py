@@ -76,6 +76,10 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                     User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])
+            if 'profile_image' in serializer.data:
+                image_instance = instance.get()
+                image_instance.profile_image = request.FILES['profile_image']
+                image_instance.save()
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
 
         else:
