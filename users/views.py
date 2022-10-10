@@ -81,7 +81,6 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 image_instance.profile_image = request.FILES['profile_image']
                 image_instance.save()
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
-
         else:
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
