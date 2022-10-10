@@ -23,7 +23,7 @@ class Profile(models.Model):
 
 
 class ForbiddenUsername(models.Model):
-    username = models.CharField(max_length=200)
+    username = models.CharField(max_length=200, null=True, blank=True)
 
 
 class TokenExpiration(models.Model):
