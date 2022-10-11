@@ -6,8 +6,23 @@
   <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chatty 익명채팅</title>
-  <script type="module" crossorigin src="/assets/index.fcc4e05b.js"></script>
-  <link rel="stylesheet" href="/assets/index.7e2cebe8.css">
+  <script>
+    // Mobile Height Config
+    let timeoutId = null;
+    const mobileHeight = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId); // avoid execution of previous timeouts
+      }
+      timeoutId = setTimeout(() => {
+        const doc = document.documentElement;
+        doc.style.setProperty('--mobile-height', `${window.innerHeight}px`)
+      }, 200);
+    };
+    window.addEventListener('resize', mobileHeight);
+    mobileHeight();
+  </script>
+  <script type="module" crossorigin src="/assets/index.7b9e85ac.js"></script>
+  <link rel="stylesheet" href="/assets/index.8857553a.css">
 </head>
 
 <body>
