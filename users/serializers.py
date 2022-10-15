@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -17,11 +18,14 @@ from drf_yasg.utils import swagger_auto_schema
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())],
+                                     min_length=5, max_length=15)
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
+                                     max_length=20)
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
@@ -29,21 +33,30 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'password', 'password2', 'email')
 
     def validate(self, data):
+        if re.match('[a-z|A-Z|0-9]+$', data['username']) is None:
+            raise serializers.ValidationError({'error': '아이디는 영어 + 숫자 조합만 가능합니다.'})
+
+        if re.match('^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$', data['password']) is None:
+            raise serializers.ValidationError({'error': '비밀번호는 8자 이상 영어, 숫자, 기호 포함'})
+
         if data['password'] != data['password2']:
-            raise serializers.ValidationError({"password": "비밀번호가 일치하지 않습니다."})
+            raise serializers.ValidationError({'password': '비밀번호가 일치하지 않습니다.'})
+
         restricted_username_list = ForbiddenUsername.objects.values_list()
         for i in restricted_username_list:
             if i[1] in data['username'].lower():
                 raise serializers.ValidationError({'error': '사용불가 아이디입니다.'})
+
         if User.objects.filter(username=data['username']).exists():
             raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
+
         return data
 
     def create(self, validated_data):
         user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
         user.set_password(validated_data['password'])
         user.save()
-        token = Token.objects.create(user=user)
+        Token.objects.create(user=user)
         return user
 
 
@@ -58,6 +71,7 @@ class LoginSerializer(serializers.Serializer):
                 token = Token.objects.get(user=user)
                 print(token.tokenexpiration.expiration_date.replace(
                     tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None))
+
                 if token.tokenexpiration.expiration_date.replace(
                         tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None) < datetime.timedelta(seconds=1):
                     token.delete()
@@ -107,8 +121,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         if Question.objects.filter(
                 target_profile__username=obj.username).exists():
             return round(Question.objects.filter(target_profile__username=obj.username,
-                                                 answer__isnull=False).count() / Question.objects.filter(
-                target_profile__username=obj.username).count() * 100)
+                                                 answer__isnull=False,
+                                                 delete_status=False).count() / Question.objects.filter(
+                target_profile__username=obj.username, delete_status=False).count() * 100)
         else:
             return 0
 
@@ -130,12 +145,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('username', 'profile_message', 'profile_image')
-
-
-class ProfileAdminSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ('profile_image', 'profile_message', 'deactivated_status', 'ban_until', 'recent_access_ip')
 
 
 class FollowUserSerializer(serializers.ModelSerializer):

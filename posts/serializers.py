@@ -31,7 +31,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if Profile.objects.filter(username__username=data['target_profile']).exists():
             return data
-        raise serializers.ValidationError({'error': 'error'})
+        raise serializers.ValidationError({'error': '질문 대상이 잘못되었습니다.'})
 
     class Meta:
         model = Question

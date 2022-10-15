@@ -110,6 +110,11 @@ DATABASES = {
     },
 }
 
+EMAIL_BACKEND = 'django_ses.SESBackend'
+AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
+AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
+AWS_SES_REGION_NAME = get_secret('AWS_REGION')
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
@@ -132,6 +137,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'EXCEPTION_HANDLER': 'chatty_drf.exception_handler.custom_exception_handler'
 }
 
 SWAGGER_SETTINGS = {

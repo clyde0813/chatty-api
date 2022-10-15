@@ -1,19 +1,21 @@
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
+from django.core import mail
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.authtoken.models import Token
 
 from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 
-from .models import Profile, Report, ForbiddenUsername
+from .models import Profile, ForbiddenUsername
 from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileAdminSerializer, ProfileUpdateSerializer, FollowUserSerializer
-from .permissions import CustomReadOnly
+    ProfileUpdateSerializer, FollowUserSerializer
+
+import threading
+
+
+def send_mail(subject, message, recipient_list, from_email, fail_silently):
+    mail.send_mail(subject=subject, message=message, recipient_list=recipient_list, from_email=from_email,
+                   fail_silently=fail_silently)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -29,6 +31,11 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data
+        mail_threading = threading.Thread(target=send_mail,
+                                          args=['Login Alert', str(token.user.username) + ' Login Alert',
+                                                ['eric3285@naver.com'], 'no_reply@chatty.kr', False])
+        mail_threading.setDaemon(True)
+        mail_threading.start()
         return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
 
 
@@ -66,7 +73,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             instance = self.queryset.filter(username=request.user)
             restricted_username_list = ForbiddenUsername.objects.values_list()
             serializer = ProfileUpdateSerializer(request.data)
-            if 'username' in serializer.data and serializer.data['username'] is not '':
+            if 'username' in serializer.data and serializer.data['username'] != '':
                 for i in restricted_username_list:
                     if i[1] in serializer.data['username'].lower():
                         return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -86,14 +93,6 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ProfileAdminView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAdminUser]
-    queryset = Profile.objects.all()
-    serializer_class = ProfileAdminSerializer
-    lookup_field = 'username__username'
-    lookup_url_kwarg = 'username'
 
 
 class FollowUserView(generics.GenericAPIView):
