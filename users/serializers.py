@@ -5,16 +5,13 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
-
-from rest_framework import serializers, status
+from django.core.cache import cache
+from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
 from rest_framework.validators import UniqueValidator
 
-from users.models import Profile, Report, BannedIp, TokenExpiration, ForbiddenUsername
-from posts.models import Question, Answer
-from chatty_drf.ip_address_gatherer import get_client_ip
-from drf_yasg.utils import swagger_auto_schema
+from users.models import Profile, ForbiddenUsername
+from posts.models import Question
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -24,13 +21,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
+    verification_code = serializers.IntegerField(required=False)
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
                                      max_length=20)
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'password2', 'email')
+        fields = ('username', 'password', 'password2', 'email', 'verification_code')
 
     def validate(self, data):
         if re.match('[a-z|A-Z|0-9]+$', data['username']) is None:
@@ -53,11 +51,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
-        user.set_password(validated_data['password'])
-        user.save()
-        Token.objects.create(user=user)
-        return user
+        if validated_data['verification_code'] == cache.get(validated_data['email']):
+            user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
+            user.set_password(validated_data['password'])
+            user.save()
+            Token.objects.create(user=user)
+            cache.delete(validated_data['email'])
+            return user
+        else:
+            raise serializers.ValidationError({'error': '인증 코드가 일치하지 않습니다.'})
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
 
 
 class LoginSerializer(serializers.Serializer):

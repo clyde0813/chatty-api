@@ -1,6 +1,9 @@
+import random
+
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.core import mail
+from django.core.cache import cache
 from rest_framework import generics, status
 from rest_framework.response import Response
 
@@ -8,7 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 from .models import Profile, ForbiddenUsername
 from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileUpdateSerializer, FollowUserSerializer
+    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer
 
 import threading
 
@@ -21,6 +24,19 @@ def send_mail(subject, message, recipient_list, from_email, fail_silently):
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+
+
+class EmailVerificationView(generics.GenericAPIView):
+    serializer_class = EmailVerificationSerializer
+
+    @swagger_auto_schema(tags=['이메일 인증'])
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            random_num = random.randint(100000, 999999)
+            cache.set(serializer.data['email'], random_num)
+            print(cache.get(serializer.data['email']))
+            return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
 
 
 class LoginView(generics.GenericAPIView):
