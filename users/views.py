@@ -37,6 +37,8 @@ class EmailVerificationView(generics.GenericAPIView):
             cache.set(serializer.data['email'], random_num)
             print(cache.get(serializer.data['email']))
             return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(generics.GenericAPIView):
