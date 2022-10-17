@@ -1,4 +1,5 @@
 import random
+import time
 
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
@@ -106,7 +107,9 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 instance.update(profile_message=serializer.data['profile_message'])
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
-                image_instance.profile_image = request.FILES['profile_image']
+                image_file = request.FILES['profile_image']
+                image_file._name = str(request.user) + str(time.time()) + ".png"
+                image_instance.profile_image = image_file
                 image_instance.save()
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
         else:
