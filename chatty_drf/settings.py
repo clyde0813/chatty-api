@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
     'rest_framework',
     'rest_framework.authtoken',
     'users',
@@ -120,10 +121,21 @@ CACHES = {
     }
 }
 
+# AWS SES
 EMAIL_BACKEND = 'django_ses.SESBackend'
 AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
 AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
 AWS_SES_REGION_NAME = get_secret('AWS_REGION')
+
+# AWS S3 Storages
+AWS_STORAGE_BUCKET_NAME = get_secret('AWS_BUCKET_NAME')
+AWS_S3_CUSTOM_DOMAIN = get_secret('AWS_S3_DOMAIN')
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_DEFAULT_ACL = 'public-read'
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -205,7 +217,6 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(ROOT_DIR, '.static_root')
 
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
