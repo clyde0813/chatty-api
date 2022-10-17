@@ -108,7 +108,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
                 image_file = request.FILES['profile_image']
-                image_file._name = str(request.user) + str(time.time()) + ".png"
+                image_file.name = str(request.user) + str(time.time())
                 image_instance.profile_image = image_file
                 image_instance.save()
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
