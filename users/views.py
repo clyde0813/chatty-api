@@ -35,8 +35,12 @@ class EmailVerificationView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             random_num = random.randint(100000, 999999)
+            mail_threading = threading.Thread(target=send_mail,
+                                              args=['Chatty Email Verification', 'Verification Code : ' + str(random_num),
+                                                    [serializer.data['email']], 'no.reply.chatty.kr@gmail.com', False])
+            mail_threading.setDaemon(True)
+            mail_threading.start()
             cache.set(serializer.data['email'], random_num)
-            print(cache.get(serializer.data['email']))
             return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -50,9 +54,10 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data
+        print(str(token.user.email))
         mail_threading = threading.Thread(target=send_mail,
                                           args=['Login Alert', str(token.user.username) + ' Login Alert',
-                                                ['eric3285@naver.com'], 'no_reply@chatty.kr', False])
+                                                [str(token.user.email)], 'no.reply.chatty.kr@gmail.com', False])
         mail_threading.setDaemon(True)
         mail_threading.start()
         return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)

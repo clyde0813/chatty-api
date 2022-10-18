@@ -121,11 +121,20 @@ CACHES = {
     }
 }
 
+#Google mail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'no.reply.chatty.kr@gmail.com'
+EMAIL_HOST_PASSWORD = get_secret('GMAIL_APP_PW')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 # AWS SES
-EMAIL_BACKEND = 'django_ses.SESBackend'
+# EMAIL_BACKEND = 'django_ses.SESBackend'
 AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
 AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
-AWS_SES_REGION_NAME = get_secret('AWS_REGION')
+# AWS_SES_REGION_NAME = get_secret('AWS_REGION')
 
 # AWS S3 Storages
 AWS_STORAGE_BUCKET_NAME = get_secret('AWS_BUCKET_NAME')
