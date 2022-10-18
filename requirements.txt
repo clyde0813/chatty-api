@@ -3,6 +3,7 @@ djangorestframework
 django-filter
 drf-yasg
 django-cors-headers
+gunicorn
 pymysql
 django-ses
 django-redis
