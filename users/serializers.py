@@ -78,7 +78,7 @@ class LoginSerializer(serializers.Serializer):
                 token = Token.objects.get(user=user)
                 print(token.tokenexpiration.expiration_date.replace(
                     tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None))
-
+                User.objects.filter(username=data['username']).update(last_login=datetime.datetime.now())
                 if token.tokenexpiration.expiration_date.replace(
                         tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None) < datetime.timedelta(seconds=1):
                     token.delete()

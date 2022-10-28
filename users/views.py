@@ -34,14 +34,19 @@ class EmailVerificationView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            random_num = random.randint(100000, 999999)
-            mail_threading = threading.Thread(target=send_mail,
-                                              args=['Chatty Email Verification', 'Verification Code : ' + str(random_num),
-                                                    [serializer.data['email']], 'no.reply.chatty.kr@gmail.com', False])
-            mail_threading.setDaemon(True)
-            mail_threading.start()
-            cache.set(serializer.data['email'], random_num)
-            return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
+            if User.objects.filter(email=serializer.data['email']).exists():
+                return Response({'error': '이미 사용중인 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                random_num = random.randint(100000, 999999)
+                mail_threading = threading.Thread(target=send_mail,
+                                                  args=['Chatty Email Verification',
+                                                        'Verification Code : ' + str(random_num),
+                                                        [serializer.data['email']], 'no.reply.chatty.kr@gmail.com',
+                                                        False])
+                mail_threading.setDaemon(True)
+                mail_threading.start()
+                cache.set(serializer.data['email'], random_num)
+                return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
