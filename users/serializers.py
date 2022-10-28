@@ -31,7 +31,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'password', 'password2', 'email', 'verification_code')
 
     def validate(self, data):
-        if re.match('[a-z|A-Z|0-9]+$', data['username']) is None:
+        if re.match('[a-z|A-Z|0-9|!?+-_.]+$', data['username']) is None:
             raise serializers.ValidationError({'error': '아이디는 영어 + 숫자 조합만 가능합니다.'})
 
         if re.match('^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$', data['password']) is None:
