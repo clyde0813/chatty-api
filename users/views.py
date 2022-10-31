@@ -1,3 +1,4 @@
+import datetime
 import random
 import time
 
@@ -15,6 +16,7 @@ from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, 
     ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer
 
 import threading
+from chatty_drf.ip_address_gatherer import get_client_ip
 
 
 def send_mail(subject, message, recipient_list, from_email, fail_silently):
@@ -59,7 +61,8 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data
-        print(str(token.user.email))
+        User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
+        Profile.objects.filter(username=token.user).update(recent_access_ip=get_client_ip(request))
         mail_threading = threading.Thread(target=send_mail,
                                           args=['Login Alert', str(token.user.username) + ' Login Alert',
                                                 [str(token.user.email)], 'no.reply.chatty.kr@gmail.com', False])

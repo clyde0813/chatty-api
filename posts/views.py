@@ -46,20 +46,24 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
-            target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
-            question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
-                                              target_profile=target_profile,
-                                              nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                                       choice(NounList.objects.values_list('word'))[0],
-                                              chatroom_password=choice(AdjectiveList.objects.values_list('word'))[
-                                                                    0] + ' ' +
-                                                                choice(NounList.objects.values_list('word'))[0])
-            return Response(
-                {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
-                 'content': question_object.content,
-                 'created_date': question_object.created_date,
-                 'target_profile': question_object.target_profile.username.username},
-                status=status.HTTP_200_OK)
+            if get_client_ip(request) == Profile.objects.filter(
+                    username__username=serializer.validated_data['target_profile']).get().recent_access_ip:
+                return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
+                question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
+                                                  target_profile=target_profile,
+                                                  nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
+                                                           choice(NounList.objects.values_list('word'))[0],
+                                                  chatroom_password=choice(AdjectiveList.objects.values_list('word'))[
+                                                                        0] + ' ' +
+                                                                    choice(NounList.objects.values_list('word'))[0])
+                return Response(
+                    {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
+                     'content': question_object.content,
+                     'created_date': question_object.created_date,
+                     'target_profile': question_object.target_profile.username.username},
+                    status=status.HTTP_200_OK)
         else:
             return Response({'error': '질문 등록 실패'}, status=status.HTTP_400_BAD_REQUEST)
 
