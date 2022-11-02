@@ -1,3 +1,4 @@
+import datetime
 from random import choice
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -47,8 +48,16 @@ class QuestionCreateAPIView(generics.GenericAPIView):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
             if get_client_ip(request) == Profile.objects.filter(
-                    username__username=serializer.validated_data['target_profile']).get().recent_access_ip:
-                return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                    username__username=serializer.validated_data[
+                        'target_profile']).get().recent_access_ip \
+                    or Question.objects.filter(
+                target_profile__username__username=serializer.validated_data['target_profile'],
+                created_date__year=datetime.datetime.now().year,
+                created_date__month=datetime.datetime.now().month,
+                created_date__day=datetime.datetime.now().day,
+                author_ip=get_client_ip(request)).count() >= 3:
+                return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'},
+                                status=status.HTTP_400_BAD_REQUEST)
             else:
                 target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
                 question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
@@ -144,17 +153,21 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                                                         pk=request.data['question_id'], answer__isnull=True,
                                                         refusal_status=False, delete_status=False)
             if question_instance.exists() is True:
-                question_data = question_instance.get()
-                ChatRoom.objects.create(question=question_instance.get())
-                Answer.objects.create(question_id=request.data['question_id'],
-                                      author_profile=Profile.objects.get(username=request.user),
-                                      author_ip=get_client_ip(request), content=request.data['content'])
-                return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
-                                 'content': question_data.content,
-                                 'created_date': question_data.created_date,
-                                 'target_profile': question_data.target_profile.username.username,
-                                 'chatroom_id': question_data.chat_room.pk},
-                                status=status.HTTP_200_OK)
+                if question_instance.get().author_ip != get_client_ip(request):
+                    question_data = question_instance.get()
+                    ChatRoom.objects.create(question=question_instance.get())
+                    Answer.objects.create(question_id=request.data['question_id'],
+                                          author_profile=Profile.objects.get(username=request.user),
+                                          author_ip=get_client_ip(request), content=request.data['content'])
+                    return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
+                                     'content': question_data.content,
+                                     'created_date': question_data.created_date,
+                                     'target_profile': question_data.target_profile.username.username,
+                                     'chatroom_id': question_data.chat_room.pk},
+                                    status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': 'bot에 의해 자문자답이 감지되었습니다. 답변은 등록되지 않습니다.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
