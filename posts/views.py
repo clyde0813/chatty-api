@@ -11,7 +11,7 @@ from .models import Question, Answer
 from chats.models import NounList, AdjectiveList, ChatRoom
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
     AnswerCreateSerializer
-from chatty_drf.ip_address_gatherer import get_client_ip
+from config.ip_address_gatherer import get_client_ip
 
 
 class CustomPagination(PageNumberPagination):

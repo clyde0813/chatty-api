@@ -16,7 +16,7 @@ from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, 
     ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer
 
 import threading
-from chatty_drf.ip_address_gatherer import get_client_ip
+from config.ip_address_gatherer import get_client_ip
 
 
 def send_mail(subject, message, recipient_list, from_email, fail_silently):
