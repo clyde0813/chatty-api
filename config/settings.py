@@ -72,7 +72,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'chatty_drf.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
