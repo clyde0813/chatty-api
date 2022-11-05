@@ -37,9 +37,9 @@ def get_secret(setting):
 
 SECRET_KEY = get_secret("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['chatty.kr']
+ALLOWED_HOSTS = ['chatty.kr', '0.0.0.0']
 
 # Application definition
 
@@ -183,6 +183,30 @@ SWAGGER_SETTINGS = {
         }
     },
 }
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = (
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+)
+
+CORS_ALLOW_HEADERS = (
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
