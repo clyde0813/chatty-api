@@ -73,7 +73,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'chatty_drf.urls'
-
+//test
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
