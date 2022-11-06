@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
+from os.path import join
 from pathlib import Path
 import sys, json
 
@@ -203,16 +204,11 @@ DEFAULT_LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'django.server',
         },
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
         'file': {
             'level': 'INFO',
             'filters': ['require_debug_false'],
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/chatty.log',
+            'filename': join(BASE_DIR, 'logs/chatty.log'),
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
             'formatter': 'standard',
@@ -220,17 +216,15 @@ DEFAULT_LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'mail_admins', 'file'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
         },
         'chatty': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
-            'propagate': False,
         },
         'django.request': {
             'handlers': ['file', 'console'],
-            'propagate': False,
             'level': 'DEBUG',
         },
         'django.server': {

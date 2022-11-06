@@ -13,7 +13,7 @@ from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionR
     AnswerCreateSerializer
 from config.ip_address_gatherer import get_client_ip
 
-logger = logging.getLogger('chatty')
+logger = logging.getLogger(__name__)
 
 
 class CustomPagination(PageNumberPagination):
