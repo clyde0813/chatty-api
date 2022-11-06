@@ -34,7 +34,6 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-                  path('api/v1/admin/', admin.site.urls),
                   path('api/v1/users/', include('users.urls')),
                   path('api/v1/posts/', include('posts.urls')),
                   path('api/v1/chats/', include('chats.urls'))
@@ -42,6 +41,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += [
+        path('api/v1/admin/', admin.site.urls),
         re_path(r'^api/v1/swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0),
                 name='schema-json'),
         re_path(r'^api/v1/swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
