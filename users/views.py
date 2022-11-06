@@ -18,7 +18,7 @@ from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, 
 import threading
 from config.ip_address_gatherer import get_client_ip
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 
 def send_mail(subject, message, recipient_list, from_email, fail_silently):
