@@ -54,8 +54,8 @@ class EmailVerificationView(generics.GenericAPIView):
                             get_client_ip(request))
                 return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.info('Email Verification Code Sent Failed Email : ', serializer.data['email'], ' IP : ',
-                        get_client_ip(request))
+            logger.error('Email Verification Code Sent Failed Email : ', serializer.data['email'], ' IP : ',
+                         get_client_ip(request))
             return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -104,8 +104,8 @@ class ProfileGetAPIView(generics.GenericAPIView):
                         get_client_ip(request))
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            logger.info('Profile Get Failed Username : ', username, ' IP : ',
-                        get_client_ip(request))
+            logger.error('Profile Get Failed Username : ', username, ' IP : ',
+                         get_client_ip(request))
             return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -144,8 +144,8 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                         get_client_ip(request))
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.info('Profile Put Failed - Unauthorized Username : ', request.user, ' IP : ',
-                        get_client_ip(request))
+            logger.error('Profile Put Failed - Unauthorized Username : ', request.user, ' IP : ',
+                         get_client_ip(request))
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -181,6 +181,6 @@ class FollowUserView(generics.GenericAPIView):
             else:
                 return Response({'error': 'key value 오류'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.info('Follow Failed - Unauthorized Username : ', request.user, ' IP : ',
-                        get_client_ip(request))
+            logger.error('Follow Failed - Unauthorized Username : ', request.user, ' IP : ',
+                         get_client_ip(request))
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
