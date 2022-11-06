@@ -172,7 +172,7 @@ SWAGGER_SETTINGS = {
     },
 }
 
-DEFAULT_LOGGING = {
+LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
