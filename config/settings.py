@@ -226,6 +226,12 @@ DEFAULT_LOGGING = {
         'chatty': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': 'DEBUG',
         },
         'django.server': {
             'handlers': ['django.server'],
