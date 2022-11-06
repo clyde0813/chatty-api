@@ -18,7 +18,7 @@ from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, 
 import threading
 from config.ip_address_gatherer import get_client_ip
 
-logger = logging.getLogger('django')
+logger = logging.getLogger('chatty')
 
 
 def send_mail(subject, message, recipient_list, from_email, fail_silently):
@@ -50,12 +50,12 @@ class EmailVerificationView(generics.GenericAPIView):
                 mail_threading.setDaemon(True)
                 mail_threading.start()
                 cache.set(serializer.data['email'], random_num)
-                logger.info('Email Verification Code Sent Email : ', serializer.data['email'], ' IP : ',
-                            get_client_ip(request))
+                logger.info('Email Verification Code Sent Email : ', str(serializer.data['email']), ' IP : ',
+                            str(get_client_ip(request)))
                 return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.error('Email Verification Code Sent Failed Email : ', serializer.data['email'], ' IP : ',
-                         get_client_ip(request))
+            logger.error('Email Verification Code Sent Failed Email : ', str(serializer.data['email']), ' IP : ',
+                         str(get_client_ip(request)))
             return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -74,8 +74,8 @@ class LoginView(generics.GenericAPIView):
                                                 [str(token.user.email)], 'no.reply.chatty.kr@gmail.com', False])
         mail_threading.setDaemon(True)
         mail_threading.start()
-        logger.info('Login Success Username : ', token.user.username, ' IP : ',
-                    get_client_ip(request))
+        logger.info('Login Success Username : ', str(token.user.username), ' IP : ',
+                    str(get_client_ip(request)))
         return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
 
 
@@ -86,8 +86,8 @@ class LogoutView(generics.GenericAPIView):
     def get(self, request):
         serializer = self.get_serializer(data=request.META)
         serializer.is_valid(raise_exception=True)
-        logger.info('Logout Success Username : ', request.user, ' IP : ',
-                    get_client_ip(request))
+        logger.info('Logout Success Username : ', str(request.user.username), ' IP : ',
+                    str(get_client_ip(request)))
         return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
 
 
@@ -100,12 +100,12 @@ class ProfileGetAPIView(generics.GenericAPIView):
         if Profile.objects.filter(username__username=username).exists():
             instance = self.queryset.filter(username__username=username).get()
             serializer = ProfileSerializer(instance)
-            logger.info('Profile Get Success Username : ', username, ' IP : ',
-                        get_client_ip(request))
+            logger.info('Profile Get Success Username : ', str(username), ' IP : ',
+                        str(get_client_ip(request)))
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            logger.error('Profile Get Failed Username : ', username, ' IP : ',
-                         get_client_ip(request))
+            logger.error('Profile Get Failed Username : ', str(username), ' IP : ',
+                         str(get_client_ip(request)))
             return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -129,8 +129,8 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                     try:
                         User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
                     except Exception as e:
-                        logger.info('Profile Put Failed Username : ', request.user, ' IP : ',
-                                    get_client_ip(request), ' Error : ', e)
+                        logger.info('Profile Put Failed Username : ', str(request.user.username), ' IP : ',
+                                    str(get_client_ip(request)), ' Error : ', str(e))
                         return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])
@@ -140,12 +140,12 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 image_file.name = str(request.user) + str(time.time())
                 image_instance.profile_image = image_file
                 image_instance.save()
-            logger.info('Profile Put Success Username : ', request.user, ' IP : ',
-                        get_client_ip(request))
+            logger.info('Profile Put Success Username : ', str(request.user.username), ' IP : ',
+                        str(get_client_ip(request)))
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.error('Profile Put Failed - Unauthorized Username : ', request.user, ' IP : ',
-                         get_client_ip(request))
+            logger.error('Profile Put Failed - Unauthorized IP : ',
+                         str(get_client_ip(request)))
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -165,22 +165,21 @@ class FollowUserView(generics.GenericAPIView):
                 elif target.profile_username.follower.filter(username=request.user).exists():
                     target.profile_username.follower.remove(request.user)
                     request_user.following.remove(target)
-                    logger.info('Follow Cancelled Success Username : ', request.user, ' Target : ',
-                                serializer.data['username'], ' IP : ',
-                                get_client_ip(request))
+                    logger.info('Follow Cancel Success Username : ', str(request.user.username), ' Target : ',
+                                str(serializer.data['username']), ' IP : ',
+                                str(get_client_ip(request)))
                     return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
                 else:
                     target.profile_username.follower.add(request.user)
                     request_user.following.add(target)
-                    logger.info('Follow Cancelled Success Username : ', request.user, ' Target : ',
+                    logger.info('Follow Success Username : ', str(request.user.username), ' Target : ',
                                 serializer.data['username'], ' IP : ',
-                                get_client_ip(request))
+                                str(get_client_ip(request)))
                     return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'key value 오류'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.error('Follow Failed - Unauthorized Username : ', request.user, ' IP : ',
-                         get_client_ip(request))
+            logger.error('Follow Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)

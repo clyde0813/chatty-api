@@ -37,12 +37,12 @@ class QuestionGetAPIView(generics.GenericAPIView):
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
-            logger.info('Question Get Success Username : ', username, ' IP : ',
-                        get_client_ip(request))
+            logger.info('Question Get Success Username : ', str(username), ' IP : ',
+                        str(get_client_ip(request)))
             return paginator.get_paginated_response(serializer.data)
         else:
-            logger.error('Question Get Failed Username : ', username, ' IP : ',
-                         get_client_ip(request))
+            logger.error('Question Get Failed Username : ', str(username), ' IP : ',
+                         str(get_client_ip(request)))
             return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -63,8 +63,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 created_date__day=datetime.datetime.now().day,
                 author_ip=get_client_ip(request)).count() >= 3:
                 logger.error('Question Post Failed - Bot Detection Target : ',
-                             serializer.validated_data['target_profile'], ' IP : ',
-                             get_client_ip(request))
+                             str(serializer.validated_data['target_profile']), ' IP : ', str(get_client_ip(request)))
                 return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'},
                                 status=status.HTTP_400_BAD_REQUEST)
             else:
@@ -77,8 +76,8 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                                         0] + ' ' +
                                                                     choice(NounList.objects.values_list('word'))[0])
                 logger.info('Question Post Success Target : ',
-                            serializer.validated_data['target_profile'], ' Content : ', question_object.content,
-                            ' IP : ', get_client_ip(request))
+                            str(serializer.validated_data['target_profile']), ' Content : ',
+                            str(question_object.content), ' IP : ', str(get_client_ip(request)))
                 return Response(
                     {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
                      'content': question_object.content,
@@ -86,7 +85,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                      'target_profile': question_object.target_profile.username.username},
                     status=status.HTTP_200_OK)
         else:
-            logger.error('Question Post Failed IP : ', get_client_ip(request))
+            logger.error('Question Post Failed IP : ', str(get_client_ip(request)))
             return Response({'error': '질문 등록 실패'}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(tags=['질문 삭제'])
@@ -96,14 +95,15 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                       pk=request.data['question_id'], delete_status=False)
             if question_object.exists() is True:
                 question_object.update(delete_status=True)
-                logger.info('Question Delete Success Username : ', request.user, ' IP : ', get_client_ip(request))
+                logger.info('Question Delete Success Username : ', str(request.user.username), ' IP : ',
+                            str(get_client_ip(request)))
                 return Response({'info': '질문 삭제 완료'}, status=status.HTTP_200_OK)
             else:
-                logger.error('Question Delete Failed - No Question Username : ', request.user, ' IP : ',
-                             get_client_ip(request))
+                logger.error('Question Delete Failed - No Question Username : ', str(request.user.username), ' IP : ',
+                             str(get_client_ip(request)))
                 return Response({'error': '해당 질문 없음'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.error('Question Delete Failed - Unauthorized IP : ', get_client_ip(request))
+            logger.error('Question Delete Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -119,10 +119,11 @@ class QuestionUnansweredAPIView(generics.GenericAPIView):
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
-            logger.info('Question Unanswered Get Success Username : ', request.user, ' IP : ', get_client_ip(request))
+            logger.info('Question Unanswered Get Success Username : ', str(request.user.username), ' IP : ',
+                        str(get_client_ip(request)))
             return paginator.get_paginated_response(serializer.data)
         else:
-            logger.error('Question Unanswered Get Failed - Unauthorized IP : ', get_client_ip(request))
+            logger.error('Question Unanswered Get Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -138,10 +139,11 @@ class QuestionRejectedAPIView(generics.GenericAPIView):
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
-            logger.info('Question Rejected Get Success Username : ', request.user, ' IP : ', get_client_ip(request))
+            logger.info('Question Rejected Get Success Username : ', str(request.user.username), ' IP : ',
+                        str(get_client_ip(request)))
             return paginator.get_paginated_response(serializer.data)
         else:
-            logger.error('Question Rejected Get Failed - Unauthorized IP : ', get_client_ip(request))
+            logger.error('Question Rejected Get Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(tags=['질문 거절'])
@@ -153,20 +155,19 @@ class QuestionRejectedAPIView(generics.GenericAPIView):
             if question_object.exists() is True:
                 question_data = question_object.get()
                 question_object.update(refusal_status=True)
-                logger.info('Question Rejected Post Success Username : ', request.user, ' IP : ',
-                            get_client_ip(request))
+                logger.info('Question Rejected Post Success Username : ', str(request.user.username), ' IP : ',
+                            str(get_client_ip(request)))
                 return Response({'info': '질문 거절 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
                                  'content': question_data.content,
                                  'created_date': question_data.created_date,
                                  'target_profile': question_data.target_profile.username.username},
                                 status=status.HTTP_200_OK)
             else:
-                logger.error('Question Reject Failed - No Question Username : ', request.user, ' IP : ',
-                             get_client_ip(request))
+                logger.error('Question Reject Failed - No Question Username : ', str(request.user.username), ' IP : ',
+                             str(get_client_ip(request)))
                 return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.error('Question Reject Failed - Unauthorized IP : ',
-                         get_client_ip(request))
+            logger.error('Question Reject Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -186,8 +187,8 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                     Answer.objects.create(question_id=request.data['question_id'],
                                           author_profile=Profile.objects.get(username=request.user),
                                           author_ip=get_client_ip(request), content=request.data['content'])
-                    logger.info('Answer Post Success Username : ', request.user, ' IP : ',
-                                get_client_ip(request))
+                    logger.info('Answer Post Success Username : ', str(request.user.username), ' IP : ',
+                                str(get_client_ip(request)))
                     return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
                                      'content': question_data.content,
                                      'created_date': question_data.created_date,
@@ -195,14 +196,14 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                                      'chatroom_id': question_data.chat_room.pk},
                                     status=status.HTTP_200_OK)
                 else:
-                    logger.error('Answer Post Failed - Bot Detection Username : ', request.user, ' IP : ',
-                                 get_client_ip(request))
+                    logger.error('Answer Post Failed - Bot Detection Username : ', str(request.user.username), ' IP : ',
+                                 str(get_client_ip(request)))
                     return Response({'error': 'bot에 의해 자문자답이 감지되었습니다. 답변은 등록되지 않습니다.'},
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                logger.error('Answer Post Failed - No Question Username : ', request.user, ' IP : ',
-                             get_client_ip(request))
+                logger.error('Answer Post Failed - No Question Username : ', str(request.user.username), ' IP : ',
+                             str(get_client_ip(request)))
                 return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.error('Answer Post Failed - Unauthorized IP : ', get_client_ip(request))
+            logger.error('Answer Post Failed - Unauthorized IP : ', str(get_client_ip(request)))
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
