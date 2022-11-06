@@ -34,7 +34,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         if re.match('[a-z|A-Z|0-9|!?+-_.]+$', data['username']) is None:
             raise serializers.ValidationError({'error': '아이디는 영어 + 숫자 조합만 가능합니다.'})
 
-        if re.match('^(?=.*[a-z])(?=.*\d)(?=.*[_@$!%*#?&-])[A-Za-z\d_@$!%*#?&-]{8,}$', data['password']) is None:
+        if re.match('^(?=.*[a-z])(?=.*\d)(?=.*[_@$!%*#?&-])[A-Za-z\d_@$!%*#?&-]{8,15}$', data['password']) is None:
             raise serializers.ValidationError({'error': '비밀번호는 8자 이상 영어, 숫자, 기호 포함'})
 
         if data['password'] != data['password2']:
