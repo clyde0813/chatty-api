@@ -32,7 +32,7 @@ class ChatRoomEnteranceAPIView(GenericAPIView):
                 serializer = ChatRoomSerializer(result_page, many=True)
                 return paginator.get_paginated_response(serializer.data)
             else:
-                return Response({'error': '채팅방 없음'})
+                return Response({'error': []})
 
         else:
             return Response({'error': '로그인이 필요한 서비스입니다.'})
@@ -71,4 +71,4 @@ class ChatAPIView(GenericAPIView):
                 return Response({'error': '권한 없음'})
 
         else:
-            return Response({'error': '채팅방 없음'})
+            return Response({'error': []})
