@@ -16,14 +16,14 @@ from posts.models import Question
 
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())],
-                                     min_length=5, max_length=15)
+                                     min_length=4, max_length=20)
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
     verification_code = serializers.IntegerField(required=False)
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
-                                     max_length=20)
+                                     max_length=15)
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
