@@ -1,4 +1,5 @@
 import datetime
+import random
 from random import choice
 import logging
 from django.core.exceptions import ObjectDoesNotExist
@@ -59,7 +60,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 created_date__year=datetime.datetime.now().year,
                 created_date__month=datetime.datetime.now().month,
                 created_date__day=datetime.datetime.now().day,
-                author_ip=get_client_ip(request)).count() > 5:
+                author_ip=get_client_ip(request)).count() > random.randint(4, 7):
                 logger.error('Question Post Failed - Bot Detection Target : ' +
                              str(serializer.validated_data['target_profile']) + ' IP : ' + str(get_client_ip(request)))
                 return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'},
