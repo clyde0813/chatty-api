@@ -121,3 +121,4 @@ cython_debug/
 Secrets.json
 media
 .idea
+logs
