@@ -159,3 +159,16 @@ class FollowUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('username',)
+
+
+class RankingSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='username.username', required=False)
+    profile_image = serializers.ImageField(required=False)
+    question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ('username', 'profile_image', 'question_count')
+
+    def get_question_count(self, obj):
+        return obj.question_target_profile.count()
