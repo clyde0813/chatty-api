@@ -150,7 +150,6 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
     serializer_class = FollowUserSerializer
-#1234
     @swagger_auto_schema(tages=['사용자 팔로우'])
     def post(self, request):
         serializer = FollowUserSerializer(data=request.data)
