@@ -148,7 +148,6 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 
 
 class FollowUserView(generics.GenericAPIView):
-    # test
     queryset = Profile
     serializer_class = FollowUserSerializer
     @swagger_auto_schema(tages=['사용자 팔로우'])
