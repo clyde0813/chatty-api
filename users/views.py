@@ -1,5 +1,6 @@
 import datetime
 import random
+import re
 import time
 import logging
 from django.contrib.auth.models import User
@@ -121,6 +122,8 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                         return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 if User.objects.filter(username=serializer.data['username']).exists():
                     return Response({'error': '이미 사용중인 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                if re.match('^[a-z|A-Z|0-9|_.]{4,20}$', serializer.data['username']) is None:
+                    return Response({'error': '아이디는 영어 + 숫자 조합만 가능합니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     try:
                         User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
