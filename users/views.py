@@ -4,6 +4,7 @@ import re
 import time
 import logging
 from django.contrib.auth.models import User
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.core import mail
 from django.core.cache import cache
@@ -14,7 +15,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 from .models import Profile, ForbiddenUsername
 from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer
+    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer
 
 import threading
 from config.ip_address_gatherer import get_client_ip
@@ -178,3 +179,17 @@ class FollowUserView(generics.GenericAPIView):
         else:
             logger.error('Follow Failed - Unauthorized IP : ' + str(get_client_ip(request)))
             return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RankingView(generics.GenericAPIView):
+    queryset = Profile
+    serializer_class = RankingSerializer
+
+    @swagger_auto_schema(tags=['랭킹'])
+    def get(self, request):
+        serializer = RankingSerializer(
+            self.queryset.objects.filter(username__is_staff=False,
+                                         question_target_profile__delete_status=False).all().annotate(
+                question_count=Count('question_target_profile')).order_by('-question_count')[:10],
+            many=True)
+        return Response(serializer.data)

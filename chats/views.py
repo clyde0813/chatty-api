@@ -18,7 +18,7 @@ class CustomPagination(PageNumberPagination):
 
 
 # Create your views here.
-class ChatRoomEnteranceAPIView(GenericAPIView):
+class ChatRoomEntranceAPIView(GenericAPIView):
     serializer_class = ChatRoomEnteranceSerializer
     queryset = ChatRoom.objects.all()
 
@@ -32,7 +32,7 @@ class ChatRoomEnteranceAPIView(GenericAPIView):
                 serializer = ChatRoomSerializer(result_page, many=True)
                 return paginator.get_paginated_response(serializer.data)
             else:
-                return Response({'error': '채팅방 없음'})
+                return Response({'error': []})
 
         else:
             return Response({'error': '로그인이 필요한 서비스입니다.'})
@@ -44,8 +44,8 @@ class ChatRoomEnteranceAPIView(GenericAPIView):
                 question_id=request.data['question_id']).get()
             if request.user == chatroom_instance.question.target_profile.username:
                 return Response({'info': '입장', 'chatroom_id': chatroom_instance.pk})
-            elif 'chatroom_password' in request.data and request.data[
-                'chatroom_password'] == chatroom_instance.question.chatroom_password:
+            elif 'chatroom_password' in request.data \
+                    and request.data['chatroom_password'] == chatroom_instance.question.chatroom_password:
                 return Response({'chatroom_key': chatroom_instance.key, 'chatroom_id': chatroom_instance.pk})
             else:
                 return Response({'error': '권한없음'})
@@ -71,4 +71,4 @@ class ChatAPIView(GenericAPIView):
                 return Response({'error': '권한 없음'})
 
         else:
-            return Response({'error': '채팅방 없음'})
+            return Response({'error': []})
