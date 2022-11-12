@@ -171,4 +171,4 @@ class RankingSerializer(serializers.ModelSerializer):
         fields = ('username', 'profile_image', 'question_count')
 
     def get_question_count(self, obj):
-        return obj.question_target_profile.filter(delete_status=False).count()
+        return obj.question_target_profile.filter(delete_status=False, answer__isnull=False).count()
