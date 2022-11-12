@@ -125,7 +125,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
-                target_profile__username=obj.username).exists():
+                target_profile__username=obj.username, answer__isnull=False).exists():
             return round(Question.objects.filter(target_profile__username=obj.username,
                                                  answer__isnull=False,
                                                  delete_status=False).count() / Question.objects.filter(
