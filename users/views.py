@@ -71,11 +71,6 @@ class LoginView(generics.GenericAPIView):
         token = serializer.validated_data
         User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
         Profile.objects.filter(username=token.user).update(recent_access_ip=get_client_ip(request))
-        mail_threading = threading.Thread(target=send_mail,
-                                          args=['Login Alert', str(token.user.username) + ' Login Alert',
-                                                [str(token.user.email)], 'no.reply.chatty.kr@gmail.com', False])
-        mail_threading.setDaemon(True)
-        mail_threading.start()
         logger.info('Login Success Username : ' + str(token.user.username) + ' IP : ' + str(get_client_ip(request)))
         return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
 
@@ -151,6 +146,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
     serializer_class = FollowUserSerializer
+
     @swagger_auto_schema(tages=['사용자 팔로우'])
     def post(self, request):
         serializer = FollowUserSerializer(data=request.data)
@@ -189,7 +185,8 @@ class RankingView(generics.GenericAPIView):
     def get(self, request):
         serializer = RankingSerializer(
             self.queryset.objects.filter(username__is_staff=False,
-                                         question_target_profile__delete_status=False).all().annotate(
+                                         question_target_profile__delete_status=False,
+                                         question_target_profile__answer__isnull=False).all().annotate(
                 question_count=Count('question_target_profile')).order_by('-question_count')[:10],
             many=True)
         return Response(serializer.data)
