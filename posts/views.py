@@ -2,7 +2,7 @@ import datetime
 import random
 from random import choice
 import logging
-from django.core.exceptions import ObjectDoesNotExist
+from django.core import mail
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
 from rest_framework.pagination import PageNumberPagination
@@ -13,8 +13,14 @@ from chats.models import NounList, AdjectiveList, ChatRoom
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
     AnswerCreateSerializer
 from config.ip_address_gatherer import get_client_ip
+import threading
 
 logger = logging.getLogger('chatty')
+
+
+def send_mail(subject, message, recipient_list, from_email, fail_silently):
+    mail.send_mail(subject=subject, message=message, recipient_list=recipient_list, from_email=from_email,
+                   fail_silently=fail_silently)
 
 
 class CustomPagination(PageNumberPagination):
@@ -75,6 +81,13 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                               chatroom_password=choice(AdjectiveList.objects.values_list('word'))[
                                                                     0] + ' ' +
                                                                 choice(NounList.objects.values_list('word'))[0])
+            # Mail Alert
+            mail_threading = threading.Thread(target=send_mail,
+                                              args=['Chatty에 새로운 질문이 등록되었습니다! \n 질문 : ' + str(question_object.content),
+                                                    [serializer.data['email']], 'no.reply.chatty.kr@gmail.com',
+                                                    False])
+            mail_threading.setDaemon(True)
+            mail_threading.start()
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
             return Response(
