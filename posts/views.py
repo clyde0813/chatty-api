@@ -83,10 +83,11 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                                 choice(NounList.objects.values_list('word'))[0])
             # Mail Alert
             mail_threading = threading.Thread(target=send_mail,
-                                              args=['Chatty에 새로운 질문이 등록되었습니다! \n 질문 : ' + str(question_object.content),
+                                              args=['Chatty에 새로운 질문이 도착했습니다!',
+                                                    'Chatty에 새로운 질문이 도착했습니다! \n 질문 내용 : ' + str(
+                                                        question_object.content),
                                                     [str(target_profile.username.email)],
-                                                    'no.reply.chatty.kr@gmail.com',
-                                                    False])
+                                                    'no.reply.chatty.kr@gmail.com', False])
             mail_threading.setDaemon(True)
             mail_threading.start()
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +

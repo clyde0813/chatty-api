@@ -23,9 +23,9 @@ from config.ip_address_gatherer import get_client_ip
 logger = logging.getLogger('chatty')
 
 
-def send_mail(subject, message, recipient_list, from_email, fail_silently):
+def send_mail(subject, message, recipient_list, from_email):
     mail.send_mail(subject=subject, message=message, recipient_list=recipient_list, from_email=from_email,
-                   fail_silently=fail_silently)
+                   fail_silently=False)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -47,8 +47,7 @@ class EmailVerificationView(generics.GenericAPIView):
                 mail_threading = threading.Thread(target=send_mail,
                                                   args=['Chatty Email Verification',
                                                         'Verification Code : ' + str(random_num),
-                                                        [serializer.data['email']], 'no.reply.chatty.kr@gmail.com',
-                                                        False])
+                                                        [serializer.data['email']], 'no.reply.chatty.kr@gmail.com'])
                 mail_threading.setDaemon(True)
                 mail_threading.start()
                 cache.set(serializer.data['email'], random_num)
