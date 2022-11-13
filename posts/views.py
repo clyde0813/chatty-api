@@ -85,7 +85,8 @@ class QuestionCreateAPIView(generics.GenericAPIView):
             mail_threading = threading.Thread(target=send_mail,
                                               args=['Chatty에 새로운 질문이 도착했습니다!',
                                                     'Chatty에 새로운 질문이 도착했습니다! \n 질문 내용 : ' + str(
-                                                        question_object.content),
+                                                        question_object.content) + '\n 바로가기 : https://chatty.kr/' + str(
+                                                        question_object.target_profile.username),
                                                     [str(target_profile.username.email)],
                                                     'no.reply.chatty.kr@gmail.com', False])
             mail_threading.setDaemon(True)
