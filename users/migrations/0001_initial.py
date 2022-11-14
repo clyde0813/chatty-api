@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ('image', models.ImageField(default='default.png', upload_to='profile/')),
                 ('deactivated_status', models.BooleanField(default=False)),
                 ('ban_until', models.DateTimeField(blank=True, null=True)),
-                ('test', models.CharField(blank=True, default='1', max_length=10)),
+                ('tests', models.CharField(blank=True, default='1', max_length=10)),
                 ('recent_access_ip', models.CharField(blank=True, max_length=20)),
                 ('follower', models.ManyToManyField(related_name='follower', to=settings.AUTH_USER_MODEL)),
                 ('following', models.ManyToManyField(related_name='following', to=settings.AUTH_USER_MODEL)),

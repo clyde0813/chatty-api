@@ -25,10 +25,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
                                      max_length=15)
     password2 = serializers.CharField(write_only=True, required=True)
+    token = serializers.SerializerMethodField('get_token', required=False, read_only=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'password2', 'email', 'verification_code')
+        fields = ('username', 'password', 'password2', 'email', 'verification_code', 'token')
 
     def validate(self, data):
         if re.match('^[a-z|A-Z|0-9|_.]{4,20}$', data['username']) is None:
@@ -61,6 +62,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({'error': '인증 코드가 일치하지 않습니다.'})
 
+    def get_token(self, obj):
+        token = Token.objects.get(user=obj)
+        return token.key
+
 
 class EmailVerificationSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
@@ -76,8 +81,6 @@ class LoginSerializer(serializers.Serializer):
         if user:
             try:
                 token = Token.objects.get(user=user)
-                print(token.tokenexpiration.expiration_date.replace(
-                    tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None))
                 if token.tokenexpiration.expiration_date.replace(
                         tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None) < datetime.timedelta(seconds=1):
                     token.delete()
