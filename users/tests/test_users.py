@@ -10,27 +10,26 @@ class UserTestCase(APITestCase):
         self.register_url = "/api/v1/users/register"
         self.profile_url = "/api/v1/users/profile/"
         self.profile_put_url = "/api/v1/users/profile"
-        self.email_verify_url = "/api/v1/users/email/verify"
+        # self.email_verify_url = "/api/v1/users/email/verify"
         self.follow_url = "/api/v1/users/follow"
         self.login_url = "/api/v1/users/login"
         self.logout_url = "/api/v1/users/logout"
 
         self.username = "test"
         self.password = "a123456789!"
-        self.email = "tests@chatty.kr"
+        self.email = "test@chatty.kr"
 
-        self.username2 = "tests2"
+        self.username2 = "test2"
         self.email2 = "test2@chatty.kr"
 
     def test(self):
         # First User Register
-        self.client.post(self.email_verify_url, {"email": self.email, "username": self.username})
+        # self.client.post(self.email_verify_url, {"email": self.email, "username": self.username})
         self.test_case = {
             "username": self.username,
             "password": self.password,
             "password2": self.password,
             "email": self.email,
-            "verification_code": str(cache.get(self.email))
         }
         response = self.client.post(self.register_url, self.test_case)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -40,13 +39,13 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Second User Register
-        self.client.post(self.email_verify_url, {"email": self.email2, "username": self.username2})
+        # self.client.post(self.email_verify_url, {"email": self.email2, "username": self.username2})
         self.test_case = {
             "username": self.username2,
             "password": self.password,
             "password2": self.password,
             "email": self.email2,
-            "verification_code": str(cache.get(self.email2))
+            # "verification_code": str(cache.get(self.email2))
         }
         response = self.client.post(self.register_url, self.test_case)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
