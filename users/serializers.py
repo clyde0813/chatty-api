@@ -21,7 +21,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
-    verification_code = serializers.IntegerField(required=False)
+    # verification_code = serializers.IntegerField(required=False)
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
                                      max_length=15)
     password2 = serializers.CharField(write_only=True, required=True)
@@ -29,7 +29,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'password2', 'email', 'verification_code', 'token')
+        fields = ('username', 'password', 'password2', 'email', 'token')
 
     def validate(self, data):
         if re.match('^[a-z|A-Z|0-9|_.]{4,20}$', data['username']) is None:
@@ -49,18 +49,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=data['username']).exists():
             raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
 
+        if User.objects.filter(username=data['email']).exists():
+            raise serializers.ValidationError({'error':'이미 사용중인 이메일입니다.'})
+
         return data
 
     def create(self, validated_data):
-        if validated_data['verification_code'] == cache.get(validated_data['email']):
-            user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
-            user.set_password(validated_data['password'])
-            user.save()
-            Token.objects.create(user=user)
-            cache.delete(validated_data['email'])
-            return user
-        else:
-            raise serializers.ValidationError({'error': '인증 코드가 일치하지 않습니다.'})
+        # 이메일 인증 임시 비활성화
+        # if validated_data['verification_code'] == cache.get(validated_data['email']):
+        user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
+        user.set_password(validated_data['password'])
+        user.save()
+        Token.objects.create(user=user)
+        # cache.delete(validated_data['email'])
+        return user
+        # else:
+        #     raise serializers.ValidationError({'error': '인증 코드가 일치하지 않습니다.'})
 
     def get_token(self, obj):
         token = Token.objects.get(user=obj)

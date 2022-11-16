@@ -43,20 +43,19 @@ class EmailVerificationView(generics.GenericAPIView):
             if User.objects.filter(email=serializer.data['email']).exists():
                 return Response({'error': '이미 사용중인 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                random_num = random.randint(100000, 999999)
-                mail_threading = threading.Thread(target=send_mail,
-                                                  args=['Chatty Email Verification',
-                                                        'Verification Code : ' + str(random_num),
-                                                        [serializer.data['email']], 'no.reply.chatty.kr@gmail.com'])
-                mail_threading.setDaemon(True)
-                mail_threading.start()
-                cache.set(serializer.data['email'], random_num)
-                logger.info('Email Verification Code Sent Email : ' + str(serializer.data['email']) + ' IP : ' +
-                            str(get_client_ip(request)))
-                return Response({'info': '인증 메일 전송 완료'}, status=status.HTTP_200_OK)
+                # 이메일 인증 임시 비활성화 - SMTP 이슈
+                # random_num = random.randint(100000, 999999)
+                # mail_threading = threading.Thread(target=send_mail,
+                #                                   args=['Chatty Email Verification',
+                #                                         'Verification Code : ' + str(random_num),
+                #                                         [serializer.data['email']], 'no.reply.chatty.kr@gmail.com'])
+                # mail_threading.setDaemon(True)
+                # mail_threading.start()
+                # cache.set(serializer.data['email'], random_num)
+                # logger.info('Email Verification Code Sent Email : ' + str(serializer.data['email']) + ' IP : ' +
+                #             str(get_client_ip(request)))
+                return Response({'info': '사용 가능한 이메일입니다.'}, status=status.HTTP_200_OK)
         else:
-            logger.error('Email Verification Code Sent Failed Email : ' + str(serializer.data['email']) + ' IP : ' +
-                         str(get_client_ip(request)))
             return Response({'error': '입력값이 정확하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -8,7 +8,7 @@ class PostTestCase(APITestCase):
         self.register_url = "/api/v1/users/register"
         self.profile_url = "/api/v1/users/profile/"
         self.profile_put_url = "/api/v1/users/profile"
-        self.email_verify_url = "/api/v1/users/email/verify"
+        # self.email_verify_url = "/api/v1/users/email/verify"
         self.follow_url = "/api/v1/users/follow"
         self.login_url = "/api/v1/users/login"
         self.logout_url = "/api/v1/users/logout"
@@ -29,13 +29,12 @@ class PostTestCase(APITestCase):
 
     def test(self):
         # First User Register
-        self.client.post(self.email_verify_url, {"email": self.email, "username": self.username})
+        # self.client.post(self.email_verify_url, {"email": self.email, "username": self.username})
         self.test_case = {
             "username": self.username,
             "password": self.password,
             "password2": self.password,
             "email": self.email,
-            "verification_code": str(cache.get(self.email))
         }
         response = self.client.post(self.register_url, self.test_case)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
