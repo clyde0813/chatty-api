@@ -70,8 +70,7 @@ class LoginView(generics.GenericAPIView):
         User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
         Profile.objects.filter(username=token.user).update(recent_access_ip=get_client_ip(request))
         logger.info('Login Success Username : ' + str(token.user.username) + ' IP : ' + str(get_client_ip(request)))
-        return Response({'username': token.user.username, 'token': token.key, 'test': 'test'},
-                        status=status.HTTP_200_OK)
+        return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
 
 
 class LogoutView(generics.GenericAPIView):
