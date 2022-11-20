@@ -5,13 +5,13 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.cache import cache
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.validators import UniqueValidator
 
 from users.models import Profile, ForbiddenUsername
 from posts.models import Question
+from config.ip_address_gatherer import get_client_ip
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -50,7 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'error': '이미 사용중인 아이디입니다.'})
 
         if User.objects.filter(username=data['email']).exists():
-            raise serializers.ValidationError({'error':'이미 사용중인 이메일입니다.'})
+            raise serializers.ValidationError({'error': '이미 사용중인 이메일입니다.'})
 
         return data
 
@@ -59,7 +59,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         # if validated_data['verification_code'] == cache.get(validated_data['email']):
         user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
         user.set_password(validated_data['password'])
+        user.last_login = datetime.datetime.now()
         user.save()
+        Profile.objects.filter(username=user).update(recent_access_ip=get_client_ip(self.context['request']))
         Token.objects.create(user=user)
         # cache.delete(validated_data['email'])
         return user
