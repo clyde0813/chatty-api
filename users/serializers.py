@@ -157,10 +157,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=10, required=False)
     profile_message = serializers.CharField(max_length=50, required=False)
     profile_image = serializers.ImageField(required=False)
+    background_image = serializers.ImageField(required=False)
 
     class Meta:
         model = Profile
-        fields = ('username', 'profile_message', 'profile_image')
+        fields = ('username', 'profile_message', 'profile_image', 'background_image')
 
 
 class FollowUserSerializer(serializers.ModelSerializer):

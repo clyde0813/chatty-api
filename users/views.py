@@ -134,14 +134,14 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
                 image_file = request.FILES['profile_image']
-                image_file.name = str(request.user) + "#" + str(time.time())
+                image_file.name = str(request.user) + "-time" + str(time.time())
                 image_instance.profile_image = image_file
                 image_instance.save()
 
             if 'background_image' in serializer.data:
                 image_instance = instance.get()
                 image_file = request.FILES['background_image']
-                image_file.name = str(request.user) + "#bg#" + str(time.time())
+                image_file.name = str(request.user) + "-time" + str(time.time())
                 image_instance.background_image = image_file
                 image_instance.save()
 
