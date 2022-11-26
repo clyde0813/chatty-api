@@ -114,8 +114,10 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 for i in restricted_username_list:
                     if i[1] in serializer.data['username'].lower():
                         return Response({'error': '사용불가 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
                 if User.objects.filter(username=serializer.data['username']).exists():
                     return Response({'error': '이미 사용중인 아이디입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
                 if re.match('^[a-z|A-Z|0-9|_.]{4,20}$', serializer.data['username']) is None:
                     return Response({'error': '아이디는 영어 + 숫자 조합만 가능합니다.'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
@@ -125,14 +127,24 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                         logger.info('Profile Put Failed Username : ' + str(request.user.username) + ' IP : ' +
                                     str(get_client_ip(request)) + ' Error : ' + str(e))
                         return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])
+
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
                 image_file = request.FILES['profile_image']
-                image_file.name = str(request.user) + str(time.time())
+                image_file.name = str(request.user) + "#" + str(time.time())
                 image_instance.profile_image = image_file
                 image_instance.save()
+
+            if 'background_image' in serializer.data:
+                image_instance = instance.get()
+                image_file = request.FILES['background_image']
+                image_file.name = str(request.user) + "#bg#" + str(time.time())
+                image_instance.profile_image = image_file
+                image_instance.save()
+
             logger.info('Profile Put Success Username : ' + str(request.user.username) + ' IP : ' +
                         str(get_client_ip(request)))
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)

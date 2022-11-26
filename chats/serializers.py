@@ -23,7 +23,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             return None
 
 
-class ChatRoomEnteranceSerializer(serializers.ModelSerializer):
+class ChatRoomEntranceSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(required=True)
     chatroom_password = serializers.CharField(max_length=30, required=False)
 

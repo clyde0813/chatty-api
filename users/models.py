@@ -16,6 +16,7 @@ class Profile(models.Model):
     follower = models.ManyToManyField(User, related_name='follower')
     following = models.ManyToManyField(User, related_name='following')
     profile_image = ResizedImageField(upload_to='profile/', default='default.png', quality=65, scale=0.5)
+    background_image = ResizedImageField(upload_to='background/', default='default_background.png', quality=65, scale=0.5)
     profile_message = models.CharField(max_length=50, blank=True, null=True)
     deactivated_status = models.BooleanField(default=False)
     ban_until = models.DateTimeField(null=True, blank=True)

@@ -4,7 +4,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from .serializers import ChatRoomEnteranceSerializer, ChatSerializer, ChatRoomSerializer
+from .serializers import ChatRoomEntranceSerializer, ChatSerializer, ChatRoomSerializer
 from .models import ChatRoom, Chat
 
 
@@ -19,7 +19,7 @@ class CustomPagination(PageNumberPagination):
 
 # Create your views here.
 class ChatRoomEntranceAPIView(GenericAPIView):
-    serializer_class = ChatRoomEnteranceSerializer
+    serializer_class = ChatRoomEntranceSerializer
     queryset = ChatRoom.objects.all()
 
     @swagger_auto_schema(tags=['채팅방 목록'])
