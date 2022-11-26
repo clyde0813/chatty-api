@@ -142,7 +142,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 image_instance = instance.get()
                 image_file = request.FILES['background_image']
                 image_file.name = str(request.user) + "#bg#" + str(time.time())
-                image_instance.profile_image = image_file
+                image_instance.background_image = image_file
                 image_instance.save()
 
             logger.info('Profile Put Success Username : ' + str(request.user.username) + ' IP : ' +
