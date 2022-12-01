@@ -8,8 +8,7 @@ from rest_framework import status, generics
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Profile
-from .models import Question, Answer
-from chats.models import NounList, AdjectiveList, ChatRoom
+from .models import Question, Answer, AdjectiveList, NounList
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
     AnswerCreateSerializer
 from config.ip_address_gatherer import get_client_ip
@@ -77,10 +76,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile,
                                               nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
-                                                       choice(NounList.objects.values_list('word'))[0],
-                                              chatroom_password=choice(AdjectiveList.objects.values_list('word'))[
-                                                                    0] + ' ' +
-                                                                choice(NounList.objects.values_list('word'))[0])
+                                                       choice(NounList.objects.values_list('word'))[0])
             # Mail Alert
             mail_threading = threading.Thread(target=send_mail,
                                               args=['Chatty에 새로운 질문이 도착했습니다!',
@@ -201,7 +197,6 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 # 자문자답 임시 허용
                 # if question_instance.get().author_ip != get_client_ip(request):
                 question_data = question_instance.get()
-                ChatRoom.objects.create(question=question_instance.get())
                 Answer.objects.create(question_id=request.data['question_id'],
                                       author_profile=Profile.objects.get(username=request.user),
                                       author_ip=get_client_ip(request), content=request.data['content'])
@@ -210,8 +205,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
                                  'content': question_data.content,
                                  'created_date': question_data.created_date,
-                                 'target_profile': question_data.target_profile.username.username,
-                                 'chatroom_id': question_data.chat_room.pk},
+                                 'target_profile': question_data.target_profile.username.username},
                                 status=status.HTTP_200_OK)
                 # else:
                 #     logger.error(

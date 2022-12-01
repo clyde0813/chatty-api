@@ -36,7 +36,6 @@ schema_view = get_schema_view(
 urlpatterns = [
                   path('api/v1/users/', include('users.urls')),
                   path('api/v1/posts/', include('posts.urls')),
-                  path('api/v1/chats/', include('chats.urls'))
               ]
 
 if settings.DEBUG:

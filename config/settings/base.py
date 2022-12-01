@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'users',
     'posts',
-    'chats',
     'corsheaders',
     'django_filters',
     'drf_yasg'

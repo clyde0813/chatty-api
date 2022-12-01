@@ -21,3 +21,11 @@ class Answer(models.Model):
     author_ip = models.CharField(max_length=20)
     content = models.CharField(max_length=100)
     created_date = models.DateTimeField(auto_now_add=True)
+
+
+class AdjectiveList(models.Model):
+    word = models.CharField(max_length=20, primary_key=True)
+
+
+class NounList(models.Model):
+    word = models.CharField(max_length=20, primary_key=True)

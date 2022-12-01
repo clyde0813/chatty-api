@@ -20,8 +20,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = (
-            'pk', 'nickname', 'content', 'created_date',
-            'answer_content', 'chat_room')
+            'pk', 'nickname', 'content', 'created_date', 'answer_content')
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
