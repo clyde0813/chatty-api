@@ -34,9 +34,10 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-                  path('api/v1/users/', include('users.urls')),
-                  path('api/v1/posts/', include('posts.urls')),
-              ]
+    path('api/v1/users/', include('users.urls')),
+    path('api/v1/posts/', include('posts.urls')),
+    path('api/v1/community/', include('community.urls'))
+]
 
 if settings.DEBUG:
     urlpatterns += [

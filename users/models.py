@@ -12,11 +12,12 @@ from rest_framework.authtoken.models import Token
 
 
 class Profile(models.Model):
-    username = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profile_username')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profile')
     follower = models.ManyToManyField(User, related_name='follower')
     following = models.ManyToManyField(User, related_name='following')
     profile_image = ResizedImageField(upload_to='profile/', default='default.png', quality=65, scale=0.5)
-    background_image = ResizedImageField(upload_to='background/', default='default_background.png', quality=65, scale=0.5)
+    background_image = ResizedImageField(upload_to='background/', default='default_background.png', quality=65,
+                                         scale=0.5)
     profile_message = models.CharField(max_length=50, blank=True, null=True)
     deactivated_status = models.BooleanField(default=False)
     ban_until = models.DateTimeField(null=True, blank=True)
@@ -32,23 +33,10 @@ class TokenExpiration(models.Model):
     expiration_date = models.DateTimeField()
 
 
-class Report(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
-    ip_address = models.CharField(max_length=15, blank=True, null=True)
-    reported_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_user')
-    reason = models.TextField()
-    date = models.DateTimeField(auto_now_add=True)
-
-
-class BannedIp(models.Model):
-    ip_address = models.CharField(max_length=15, blank=True, null=True)
-    date = models.DateTimeField(auto_now_add=True)
-
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(username=instance)
+        Profile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=Token)

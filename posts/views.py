@@ -37,8 +37,8 @@ class QuestionGetAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['질문 리스트'])
     def get(self, request, username):
-        if Profile.objects.filter(username__username=username).exists():
-            instance = self.queryset.filter(target_profile__username__username=username, answer__isnull=False,
+        if Profile.objects.filter(user__username=username).exists():
+            instance = self.queryset.filter(target_profile__user__username=username, answer__isnull=False,
                                             refusal_status=False, delete_status=False).order_by('-answer__created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
@@ -72,7 +72,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
             #     return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'},
             #                     status=status.HTTP_400_BAD_REQUEST)
             # else:
-            target_profile = Profile.objects.get(username__username=serializer.validated_data['target_profile'])
+            target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile,
                                               nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
@@ -82,8 +82,8 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                               args=['Chatty에 새로운 질문이 도착했습니다!',
                                                     'Chatty에 새로운 질문이 도착했습니다! \n 질문 내용 : ' + str(
                                                         question_object.content) + '\n 바로가기 : https://chatty.kr/' + str(
-                                                        question_object.target_profile.username),
-                                                    [str(target_profile.username.email)],
+                                                        question_object.target_profile.user),
+                                                    [str(target_profile.user.email)],
                                                     'no.reply.chatty.kr@gmail.com', False])
             mail_threading.setDaemon(True)
             mail_threading.start()
@@ -93,7 +93,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
                  'content': question_object.content,
                  'created_date': question_object.created_date,
-                 'target_profile': question_object.target_profile.username.username},
+                 'target_profile': question_object.target_profile.user.username},
                 status=status.HTTP_200_OK)
         else:
             logger.error('Question Post Failed IP : ' + str(get_client_ip(request)))
@@ -102,7 +102,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['질문 삭제'])
     def delete(self, request):
         if request.user.is_authenticated:
-            question_object = Question.objects.filter(target_profile__username=request.user,
+            question_object = Question.objects.filter(target_profile__user=request.user,
                                                       pk=request.data['question_id'], delete_status=False)
             if question_object.exists() is True:
                 question_object.update(delete_status=True)
@@ -126,7 +126,7 @@ class QuestionUnansweredAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['미답변 질문 리스트'])
     def get(self, request):
         if request.user.is_authenticated:
-            instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
+            instance = self.queryset.filter(target_profile__user=self.request.user, answer__isnull=True,
                                             refusal_status=False, delete_status=False).order_by('-created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
@@ -146,7 +146,7 @@ class QuestionRejectedAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['거절 질문 리스트'])
     def get(self, request):
         if request.user.is_authenticated:
-            instance = self.queryset.filter(target_profile__username=self.request.user, answer__isnull=True,
+            instance = self.queryset.filter(target_profile__user=self.request.user, answer__isnull=True,
                                             refusal_status=True, delete_status=False).order_by('-created_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
@@ -161,7 +161,7 @@ class QuestionRejectedAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['질문 거절'])
     def post(self, request):
         if request.user.is_authenticated:
-            question_object = Question.objects.filter(target_profile__username=request.user,
+            question_object = Question.objects.filter(target_profile__user=request.user,
                                                       pk=request.data['question_id'],
                                                       answer__isnull=True, refusal_status=False, delete_status=False)
             if question_object.exists() is True:
@@ -172,7 +172,7 @@ class QuestionRejectedAPIView(generics.GenericAPIView):
                 return Response({'info': '질문 거절 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
                                  'content': question_data.content,
                                  'created_date': question_data.created_date,
-                                 'target_profile': question_data.target_profile.username.username},
+                                 'target_profile': question_data.target_profile.user.username},
                                 status=status.HTTP_200_OK)
             else:
                 logger.error(
@@ -190,7 +190,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['답변 등록'])
     def post(self, request):
         if request.user.is_authenticated:
-            question_instance = Question.objects.filter(target_profile__username=request.user,
+            question_instance = Question.objects.filter(target_profile__user=request.user,
                                                         pk=request.data['question_id'], answer__isnull=True,
                                                         refusal_status=False, delete_status=False)
             if question_instance.exists() is True:
@@ -198,14 +198,14 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 # if question_instance.get().author_ip != get_client_ip(request):
                 question_data = question_instance.get()
                 Answer.objects.create(question_id=request.data['question_id'],
-                                      author_profile=Profile.objects.get(username=request.user),
+                                      author_profile=Profile.objects.get(user=request.user),
                                       author_ip=get_client_ip(request), content=request.data['content'])
                 logger.info('Answer Post Success Username : ' + str(request.user.username) + ' IP : ' +
                             str(get_client_ip(request)))
                 return Response({'info': '답변 등록 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
                                  'content': question_data.content,
                                  'created_date': question_data.created_date,
-                                 'target_profile': question_data.target_profile.username.username},
+                                 'target_profile': question_data.target_profile.user.username},
                                 status=status.HTTP_200_OK)
                 # else:
                 #     logger.error(

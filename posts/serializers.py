@@ -28,7 +28,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
     content = serializers.CharField(max_length=100, required=True)
 
     def validate(self, data):
-        if Profile.objects.filter(username__username=data['target_profile']).exists():
+        if Profile.objects.filter(user__username=data['target_profile']).exists():
             return data
         raise serializers.ValidationError({'error': '질문 대상이 잘못되었습니다.'})
 

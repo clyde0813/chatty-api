@@ -61,7 +61,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.last_login = datetime.datetime.now()
         user.save()
-        Profile.objects.filter(username=user).update(recent_access_ip=get_client_ip(self.context['request']))
+        Profile.objects.filter(user=user).update(recent_access_ip=get_client_ip(self.context['request']))
         Token.objects.create(user=user)
         # cache.delete(validated_data['email'])
         return user
@@ -110,8 +110,7 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='username.username', required=False)
-    user_id = serializers.IntegerField(source='username_id', read_only=True, required=False)
+    username = serializers.CharField(source='user.username', required=False)
     response_rate = serializers.SerializerMethodField('get_response_rate', read_only=True)
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
     profile_image = serializers.ImageField(required=False)
@@ -135,20 +134,20 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
-                target_profile__username=obj.username, answer__isnull=False, delete_status=False).exists():
-            return round(Question.objects.filter(target_profile__username=obj.username,
+                target_profile__user=obj.user, answer__isnull=False, delete_status=False).exists():
+            return round(Question.objects.filter(target_profile__user=obj.user,
                                                  answer__isnull=False,
                                                  delete_status=False).count() / Question.objects.filter(
-                target_profile__username=obj.username, delete_status=False).count() * 100)
+                target_profile__user=obj.user, delete_status=False).count() * 100)
         else:
             return 0
 
     def get_question_count(self, obj):
-        context = {'answered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=False,
+        context = {'answered': Question.objects.filter(target_profile__user=obj.user, answer__isnull=False,
                                                        refusal_status=False, delete_status=False).count(),
-                   'unanswered': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
+                   'unanswered': Question.objects.filter(target_profile__user=obj.user, answer__isnull=True,
                                                          refusal_status=False, delete_status=False).count(),
-                   'rejected': Question.objects.filter(target_profile__username=obj.username, answer__isnull=True,
+                   'rejected': Question.objects.filter(target_profile__user=obj.user, answer__isnull=True,
                                                        refusal_status=True, delete_status=False).count()}
         return context
 
@@ -173,7 +172,7 @@ class FollowUserSerializer(serializers.ModelSerializer):
 
 
 class RankingSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='username.username', required=False)
+    username = serializers.CharField(source='user.username', required=False)
     profile_image = serializers.ImageField(required=False)
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
 

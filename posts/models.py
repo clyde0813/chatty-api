@@ -9,7 +9,6 @@ class Question(models.Model):
     nickname = models.CharField(max_length=20)
     target_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='question_target_profile')
     content = models.CharField(max_length=100)
-    chatroom_password = models.CharField(max_length=30)
     refusal_status = models.BooleanField(default=False)
     created_date = models.DateTimeField(auto_now_add=True)
     delete_status = models.BooleanField(default=False)

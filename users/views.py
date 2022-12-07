@@ -68,7 +68,7 @@ class LoginView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data
         User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
-        Profile.objects.filter(username=token.user).update(recent_access_ip=get_client_ip(request))
+        Profile.objects.filter(user=token.user).update(recent_access_ip=get_client_ip(request))
         logger.info('Login Success Username : ' + str(token.user.username) + ' IP : ' + str(get_client_ip(request)))
         return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
 
@@ -90,8 +90,8 @@ class ProfileGetAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['프로필 조회'])
     def get(self, request, username):
-        if Profile.objects.filter(username__username=username).exists():
-            instance = self.queryset.filter(username__username=username).get()
+        if Profile.objects.filter(user__username=username).exists():
+            instance = self.queryset.filter(user__username=username).get()
             serializer = ProfileSerializer(instance)
             logger.info('Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -107,7 +107,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['프로필 업데이트'])
     def put(self, request):
         if request.user.is_authenticated:
-            instance = self.queryset.filter(username=request.user)
+            instance = self.queryset.filter(user=request.user)
             restricted_username_list = ForbiddenUsername.objects.values_list()
             serializer = ProfileUpdateSerializer(request.data)
             if 'username' in serializer.data and serializer.data['username'] != '':
@@ -163,18 +163,18 @@ class FollowUserView(generics.GenericAPIView):
         if request.user.is_authenticated:
             if serializer.is_valid():
                 target = get_object_or_404(User, username=serializer.data['username'])
-                request_user = Profile.objects.get(username=request.user)
+                request_user = Profile.objects.get(user=request.user)
                 if request.user == target:
                     return Response({'info': '본인은 팔로우 불가합니다.'}, status=status.HTTP_200_OK)
-                elif target.profile_username.follower.filter(username=request.user).exists():
-                    target.profile_username.follower.remove(request.user)
+                elif target.profile.follower.filter(username=request.user).exists():
+                    target.profile.follower.remove(request.user)
                     request_user.following.remove(target)
                     logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
                     return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
                 else:
-                    target.profile_username.follower.add(request.user)
+                    target.profile.follower.add(request.user)
                     request_user.following.add(target)
                     logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
