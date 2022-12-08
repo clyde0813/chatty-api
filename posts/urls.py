@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import QuestionGetAPIView, QuestionCreateAPIView, QuestionUnansweredAPIView, AnswerCreateAPIView, \
-    QuestionRejectedAPIView
+    QuestionRejectedAPIView, TimelineAPIView
 
 urlpatterns = [
     path('rejected', QuestionRejectedAPIView.as_view()),
@@ -8,5 +8,7 @@ urlpatterns = [
     path('unanswered', QuestionUnansweredAPIView.as_view()),
     path('question', QuestionCreateAPIView.as_view()),
 
-    path('answer', AnswerCreateAPIView.as_view())
+    path('answer', AnswerCreateAPIView.as_view()),
+
+    path('timeline', TimelineAPIView.as_view())
 ]

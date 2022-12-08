@@ -11,7 +11,7 @@ class BoardListSerializer(serializers.ModelSerializer):
         fields = ('pk', 'name')
 
 
-class BoardPostSerializer(serializers.ModelSerializer):
+class BoardPostListSerializer(serializers.ModelSerializer):
     author_username = serializers.SerializerMethodField()
     author_image = serializers.SerializerMethodField()
     like = serializers.SerializerMethodField()
@@ -37,3 +37,13 @@ class BoardPostSerializer(serializers.ModelSerializer):
             return obj.like.count()
         else:
             return 0
+
+
+class BoardPostCreateSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(max_length=30, required=True, write_only=True)
+    content = serializers.CharField(max_length=140, required=True, write_only=True)
+    anonymity_status = serializers.BooleanField(required=True, write_only=True)
+
+    class Meta:
+        model = Post
+        fields = ('title', 'content', 'anonymity_status')

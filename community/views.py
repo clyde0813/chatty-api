@@ -6,7 +6,7 @@ from rest_framework import generics, status
 
 from config.ip_address_gatherer import get_client_ip
 from .models import Board, Post, Comment, Attachment
-from .serializers import BoardListSerializer, BoardPostSerializer
+from .serializers import BoardListSerializer, BoardPostListSerializer, BoardPostCreateSerializer
 
 logger = logging.getLogger('chatty')
 
@@ -22,7 +22,7 @@ class CustomPagination(PageNumberPagination):
 
 # Create your views here.
 
-class BoardListGETAPIView(generics.GenericAPIView):
+class BoardListAPIView(generics.GenericAPIView):
     queryset = Board.objects.all()
     serializer_class = BoardListSerializer
 
@@ -33,13 +33,27 @@ class BoardListGETAPIView(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class BoardPostGETAPIView(generics.GenericAPIView):
+class BoardPostAPIView(generics.GenericAPIView):
     queryset = Post.objects.all()
-    serializer_class = BoardPostSerializer
 
     @swagger_auto_schema(tags=['커뮤니티 게시판 게시물 목록'])
     def get(self, request, board_id):
         paginator = CustomPagination()
-        result_page = paginator.paginate_queryset(self.queryset.filter(board_id=board_id), request)
-        serializer = BoardPostSerializer(result_page, many=True)
+        result_page = paginator.paginate_queryset(self.queryset.filter(board_id=board_id).order_by("-created_date"),
+                                                  request)
+        serializer = BoardPostListSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+    @swagger_auto_schema(tags=['커뮤니티 게시물 등록'])
+    def post(self, request, board_id):
+        serializer = BoardPostCreateSerializer(data=request.data)
+        if request.user.is_authenticated:
+            try:
+                Post.objects.create(board_id=board_id, title=request.data['title'], content=['content'],
+                                    anonymity_status=request.data['anonymity_status'], author=request.user,
+                                    author_ip=get_client_ip(request))
+                return Response({'info': '게시물 등록 완료'}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({'error': '게시물 등록 실패', 'message': e}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': '로그인 후 이용가능합니다.'}, status=status.HTTP_400_BAD_REQUEST)

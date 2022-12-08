@@ -43,3 +43,17 @@ class QuestionRejectedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ('question_id',)
+
+
+class TimelineSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+    answer_content = serializers.CharField(source='answer.content')
+
+    class Meta:
+        model = Question
+        fields = ('pk', 'profile', 'content', 'answer_content')
+
+    def get_profile(self, obj):
+        instance = Profile.objects.filter(user=obj.target_profile).get()
+        serializer = ProfileSerializer(instance)
+        return serializer.data

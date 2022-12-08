@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from users.models import Profile
 from .models import Question, Answer, AdjectiveList, NounList
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
-    AnswerCreateSerializer
+    AnswerCreateSerializer, TimelineSerializer
 from config.ip_address_gatherer import get_client_ip
 import threading
 
@@ -219,4 +219,20 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             logger.error('Answer Post Failed - Unauthorized IP : ' + str(get_client_ip(request)))
+            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TimelineAPIView(generics.GenericAPIView):
+    queryset = Question.objects.all()
+
+    @swagger_auto_schema(tags=['타임라인'])
+    def get(self, request):
+        if request.user.is_authenticated:
+            instance = self.queryset.filter(
+                target_profile__user__in=Profile.objects.filter(user=request.user).get().following.distinct(),
+                answer__isnull=False, delete_status=False, refusal_status=False) \
+                .order_by("-answer__created_date").all()
+            serializer = TimelineSerializer(instance, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
