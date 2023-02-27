@@ -115,22 +115,14 @@ class ProfileSerializer(serializers.ModelSerializer):
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
     profile_image = serializers.ImageField(required=False)
     background_image = serializers.ImageField(required=False)
-    follower = serializers.SerializerMethodField('get_follower_names', read_only=True, required=False)
-    following = serializers.SerializerMethodField('get_following_names', read_only=True, required=False)
+    follower = serializers.IntegerField(source='follower.count', required=False)
+    following = serializers.IntegerField(source='following.count', required=False)
 
     class Meta:
         model = Profile
         fields = (
             'username', 'user_id', 'response_rate', 'question_count', 'profile_image', 'background_image',
             'profile_message', 'follower', 'following')
-
-    def get_follower_names(self, obj):
-        group_name_list = [i.username for i in obj.follower.all()]
-        return group_name_list
-
-    def get_following_names(self, obj):
-        group_name_list = [i.username for i in obj.following.all()]
-        return group_name_list
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
