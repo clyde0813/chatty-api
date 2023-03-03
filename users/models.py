@@ -1,4 +1,6 @@
+import binascii
 import datetime
+import os
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -28,9 +30,11 @@ class ForbiddenUsername(models.Model):
     username = models.CharField(max_length=200, null=True, blank=True)
 
 
-class TokenExpiration(models.Model):
+class TokenData(models.Model):
     token = models.OneToOneField(Token, on_delete=models.CASCADE)
     expiration_date = models.DateTimeField()
+    refresh_token = models.CharField(max_length=40)
+    refresh_token_expiration_date = models.DateTimeField()
 
 
 @receiver(post_save, sender=User)
@@ -42,4 +46,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Token)
 def create_token_expiration(sender, instance, created, **kwargs):
     if created:
-        TokenExpiration.objects.create(token=instance, expiration_date=instance.created + datetime.timedelta(hours=6))
+        refresh_token = binascii.hexlify(os.urandom(20)).decode()
+        TokenData.objects.create(token=instance, expiration_date=instance.created + datetime.timedelta(hours=6),
+                                 refresh_token=refresh_token,
+                                 refresh_token_expiration_date=instance.created + datetime.timedelta(days=30))
