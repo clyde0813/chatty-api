@@ -87,7 +87,7 @@ class LoginSerializer(serializers.Serializer):
         if user:
             try:
                 token = Token.objects.get(user=user)
-                if token.tokenexpiration.expiration_date.replace(
+                if token.tokendata.expiration_date.replace(
                         tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None) < datetime.timedelta(seconds=1):
                     token.delete()
                     token = Token.objects.create(user=user)
@@ -103,10 +103,12 @@ class LogoutSerializer(serializers.Serializer):
     HTTP_AUTHORIZATION = serializers.CharField(required=True)
 
     def validate(self, data):
-        data = data['HTTP_AUTHORIZATION'].replace('Token ', '')
+        data = data['HTTP_AUTHORIZATION'].replace('token ', '')
         if Token.objects.filter(key=data).exists():
             Token.objects.filter(key=data).delete()
-        return True
+            return True
+        else:
+            return False
 
 
 class ProfileSerializer(serializers.ModelSerializer):

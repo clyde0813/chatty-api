@@ -70,7 +70,9 @@ class LoginView(generics.GenericAPIView):
         User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
         Profile.objects.filter(user=token.user).update(recent_access_ip=get_client_ip(request))
         logger.info('Login Success Username : ' + str(token.user.username) + ' IP : ' + str(get_client_ip(request)))
-        return Response({'username': token.user.username, 'token': token.key}, status=status.HTTP_200_OK)
+        return Response(
+            {'username': token.user.username, 'token': token.key, 'refresh_token': token.tokendata.refresh_token},
+            status=status.HTTP_200_OK)
 
 
 class LogoutView(generics.GenericAPIView):
@@ -79,9 +81,9 @@ class LogoutView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['로그아웃'])
     def get(self, request):
         serializer = self.get_serializer(data=request.META)
-        serializer.is_valid(raise_exception=True)
-        logger.info('Logout Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request)))
-        return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
+        if serializer.is_valid(raise_exception=True):
+            logger.info('Logout Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request)))
+            return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
 
 
 class ProfileGetAPIView(generics.GenericAPIView):
