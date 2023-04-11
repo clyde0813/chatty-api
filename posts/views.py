@@ -57,7 +57,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
-            target_profile = Profile.objects.get(user__username=serializer.validated_data['username'])
+            target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile,
                                               nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
