@@ -174,12 +174,12 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
+        # 'require_debug_false': {
+        #     '()': 'django.utils.log.RequireDebugFalse',
+        # },
+        # 'require_debug_true': {
+        #     '()': 'django.utils.log.RequireDebugTrue',
+        # },
     },
     'formatters': {
         'django.server': {
@@ -194,7 +194,7 @@ LOGGING = {
     'handlers': {
         'console': {
             'level': 'INFO',
-            'filters': ['require_debug_true'],
+            # 'filters': ['require_debug_false'],
             'class': 'logging.StreamHandler',
         },
         'django.server': {
@@ -204,7 +204,7 @@ LOGGING = {
         },
         'file': {
             'level': 'INFO',
-            'filters': ['require_debug_false'],
+            # 'filters': ['require_debug_false'],
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': join(BASE_DIR, 'logs/chatty.log'),
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
