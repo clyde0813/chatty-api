@@ -106,7 +106,6 @@ class QuestionCreateAPIView(generics.GenericAPIView):
 
 class QuestionUnansweredAPIView(generics.GenericAPIView):
     queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
 
     @swagger_auto_schema(tags=['미답변 질문 리스트'])
     def get(self, request):
@@ -192,12 +191,6 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                                  'created_date': question_data.created_date,
                                  'target_profile': question_data.target_profile.user.username},
                                 status=status.HTTP_200_OK)
-                # else:
-                #     logger.error(
-                #         'Answer Post Failed - Bot Detection Username : ' + str(request.user.username) + ' IP : ' +
-                #         str(get_client_ip(request)))
-                #     return Response({'error': 'bot에 의해 자문자답이 감지되었습니다. 답변은 등록되지 않습니다.'},
-                #                     status=status.HTTP_400_BAD_REQUEST)
             else:
                 logger.error('Answer Post Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                              str(get_client_ip(request)))

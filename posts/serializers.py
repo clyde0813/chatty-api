@@ -24,7 +24,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
-    username  = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
     content = serializers.CharField(max_length=100, required=True)
 
     def validate(self, data):
