@@ -38,7 +38,7 @@ DATABASES = {
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
-        'api_key': {
+        'Access_Token': {
             'type': 'apiKey',
             'in': 'header',
             'name': 'Authorization'

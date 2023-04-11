@@ -3,6 +3,8 @@ import random
 import re
 import time
 import logging
+
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -12,10 +14,11 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import Profile, ForbiddenUsername
-from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, \
-    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer
+from .serializers import RegisterSerializer, ProfileSerializer, \
+    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer
 
 import threading
 from config.ip_address_gatherer import get_client_ip
@@ -65,25 +68,28 @@ class LoginView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['로그인'])
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        token = serializer.validated_data
-        User.objects.filter(username=token.user.username).update(last_login=datetime.datetime.now())
-        Profile.objects.filter(user=token.user).update(recent_access_ip=get_client_ip(request))
-        logger.info('Login Success Username : ' + str(token.user.username) + ' IP : ' + str(get_client_ip(request)))
-        return Response(
-            {'username': token.user.username, 'token': token.key, 'refresh_token': token.tokendata.refresh_token},
-            status=status.HTTP_200_OK)
+        if serializer.is_valid(raise_exception=False):
+            validated_data = serializer.validated_data
+            User.objects.filter(username=validated_data['user'].username).update(last_login=datetime.datetime.now())
+            Profile.objects.filter(user=validated_data['user']).update(recent_access_ip=get_client_ip(request))
+            logger.info('Login Success Username : ' + str(validated_data['user'].username) + ' IP : ' + str(get_client_ip(request)))
+            return Response(
+                {'username': validated_data['user'].username, 'refresh_token': validated_data['refresh_token'], 'access_token': validated_data['access_token']},
+                status=status.HTTP_200_OK)
+        raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
 
 
-class LogoutView(generics.GenericAPIView):
-    serializer_class = LogoutSerializer
 
-    @swagger_auto_schema(tags=['로그아웃'])
-    def get(self, request):
-        serializer = self.get_serializer(data=request.META)
-        if serializer.is_valid(raise_exception=True):
-            logger.info('Logout Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request)))
-            return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
+# class LogoutView(generics.GenericAPIView):
+#     serializer_class = LogoutSerializer
+#
+#     @swagger_auto_schema(tags=['로그아웃'])
+#     def get(self, request):
+#         serializer = self.get_serializer(data=request.META)
+#         if serializer.is_valid(raise_exception=True):
+#             logger.info(
+#                 'Logout Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request)))
+#             return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
 
 
 class ProfileGetAPIView(generics.GenericAPIView):

@@ -4,15 +4,15 @@ import re
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import serializers
-from rest_framework.authtoken.models import Token
+
+from rest_framework import serializers, exceptions
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from users.models import Profile, ForbiddenUsername
 from posts.models import Question
 from config.ip_address_gatherer import get_client_ip
-
+from Exceptions.LoginExceptions import *
 
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())],
@@ -25,11 +25,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
                                      max_length=15)
     password2 = serializers.CharField(write_only=True, required=True)
-    token = serializers.SerializerMethodField('get_token', required=False, read_only=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'password2', 'email', 'token')
+        fields = ('username', 'password', 'password2', 'email')
 
     def validate(self, data):
         if re.match('^[a-z|A-Z|0-9|_.]{4,20}$', data['username']) is None:
@@ -62,15 +61,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.last_login = datetime.datetime.now()
         user.save()
         Profile.objects.filter(user=user).update(recent_access_ip=get_client_ip(self.context['request']))
-        Token.objects.create(user=user)
         # cache.delete(validated_data['email'])
         return user
         # else:
         #     raise serializers.ValidationError({'error': '인증 코드가 일치하지 않습니다.'})
-
-    def get_token(self, obj):
-        token = Token.objects.get(user=obj)
-        return token.key
 
 
 class EmailVerificationSerializer(serializers.Serializer):
@@ -80,35 +74,26 @@ class EmailVerificationSerializer(serializers.Serializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
+    password = serializers.CharField(required=True)
 
     def validate(self, data):
         user = authenticate(**data)
         if user:
-            try:
-                token = Token.objects.get(user=user)
-                if token.tokendata.expiration_date.replace(
-                        tzinfo=None) - datetime.datetime.utcnow().replace(tzinfo=None) < datetime.timedelta(seconds=1):
-                    token.delete()
-                    token = Token.objects.create(user=user)
-                return token
-            except ObjectDoesNotExist:
-                token = Token.objects.create(user=user)
-                return token
-
-        raise serializers.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
+            token = TokenObtainPairSerializer.get_token(user)
+            return {'user': user, 'refresh_token': str(token), 'access_token': str(token.access_token)}
+        raise LoginDataMismatchError()
 
 
-class LogoutSerializer(serializers.Serializer):
-    HTTP_AUTHORIZATION = serializers.CharField(required=True)
-
-    def validate(self, data):
-        data = data['HTTP_AUTHORIZATION'].replace('token ', '')
-        if Token.objects.filter(key=data).exists():
-            Token.objects.filter(key=data).delete()
-            return True
-        else:
-            return False
+# class LogoutSerializer(serializers.Serializer):
+#     HTTP_AUTHORIZATION = serializers.CharField(required=True)
+#
+#     def validate(self, data):
+#         data = data['HTTP_AUTHORIZATION'].replace('token ', '')
+#         if Token.objects.filter(key=data).exists():
+#             Token.objects.filter(key=data).delete()
+#             return True
+#         else:
+#             return False
 
 
 class ProfileSerializer(serializers.ModelSerializer):

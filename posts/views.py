@@ -57,21 +57,6 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
-            # 허위 등록 임시 허용
-            # if get_client_ip(request) == Profile.objects.filter(
-            #         username__username=serializer.validated_data[
-            #             'target_profile']).get().recent_access_ip \
-            #         or Question.objects.filter(
-            #     target_profile__username__username=serializer.validated_data['target_profile'],
-            #     created_date__year=datetime.datetime.now().year,
-            #     created_date__month=datetime.datetime.now().month,
-            #     created_date__day=datetime.datetime.now().day,
-            #     author_ip=get_client_ip(request)).count() > random.randint(4, 7):
-            #     logger.error('Question Post Failed - Bot Detection Target : ' +
-            #                  str(serializer.validated_data['target_profile']) + ' IP : ' + str(get_client_ip(request)))
-            #     return Response({'error': 'Bot에 의해 허위 질문 작성 시도가 탐지되었습니다. 질문은 등록되지 않습니다.'},
-            #                     status=status.HTTP_400_BAD_REQUEST)
-            # else:
             target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile,

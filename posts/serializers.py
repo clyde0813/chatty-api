@@ -24,17 +24,17 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
-    target_profile = serializers.CharField(required=True)
+    username  = serializers.CharField(required=True)
     content = serializers.CharField(max_length=100, required=True)
 
     def validate(self, data):
-        if Profile.objects.filter(user__username=data['target_profile']).exists():
+        if Profile.objects.filter(user__username=data['username']).exists():
             return data
         raise serializers.ValidationError({'error': '질문 대상이 잘못되었습니다.'})
 
     class Meta:
         model = Question
-        fields = ('target_profile', 'content',)
+        fields = ('username', 'content',)
 
 
 class QuestionRejectedSerializer(serializers.ModelSerializer):

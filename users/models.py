@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django_resized import ResizedImageField
-from rest_framework.authtoken.models import Token
 
 
 # Create your models here.
@@ -30,23 +29,7 @@ class ForbiddenUsername(models.Model):
     username = models.CharField(max_length=200, null=True, blank=True)
 
 
-class TokenData(models.Model):
-    token = models.OneToOneField(Token, on_delete=models.CASCADE)
-    expiration_date = models.DateTimeField()
-    refresh_token = models.CharField(max_length=40)
-    refresh_token_expiration_date = models.DateTimeField()
-
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
-
-
-@receiver(post_save, sender=Token)
-def create_token_expiration(sender, instance, created, **kwargs):
-    if created:
-        refresh_token = binascii.hexlify(os.urandom(20)).decode()
-        TokenData.objects.create(token=instance, expiration_date=instance.created + datetime.timedelta(hours=6),
-                                 refresh_token=refresh_token,
-                                 refresh_token_expiration_date=instance.created + datetime.timedelta(days=30))
