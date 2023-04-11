@@ -57,21 +57,11 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
-            target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
+            target_profile = Profile.objects.get(user__username=serializer.validated_data['username'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile,
                                               nickname=choice(AdjectiveList.objects.values_list('word'))[0] + ' ' +
                                                        choice(NounList.objects.values_list('word'))[0])
-            # Mail Alert
-            mail_threading = threading.Thread(target=send_mail,
-                                              args=['Chatty에 새로운 질문이 도착했습니다!',
-                                                    'Chatty에 새로운 질문이 도착했습니다! \n 질문 내용 : ' + str(
-                                                        question_object.content) + '\n 바로가기 : https://chatty.kr/' + str(
-                                                        question_object.target_profile.user),
-                                                    [str(target_profile.user.email)],
-                                                    'no.reply.chatty.kr@gmail.com', False])
-            mail_threading.setDaemon(True)
-            mail_threading.start()
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
             return Response(
