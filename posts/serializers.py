@@ -36,7 +36,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
         model = Question
         fields = ("target_profile", "content",)
 
-class QuestionRejectedSerializer(serializers.ModelSerializer):
+class QuestionRefusedSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(required=True)
 
     class Meta:

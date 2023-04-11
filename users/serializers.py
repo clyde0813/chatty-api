@@ -14,6 +14,7 @@ from posts.models import Question
 from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())],
                                      min_length=4, max_length=20)
@@ -82,18 +83,6 @@ class LoginSerializer(serializers.Serializer):
             token = TokenObtainPairSerializer.get_token(user)
             return {'user': user, 'refresh_token': str(token), 'access_token': str(token.access_token)}
         raise LoginDataMismatchError()
-
-
-# class LogoutSerializer(serializers.Serializer):
-#     HTTP_AUTHORIZATION = serializers.CharField(required=True)
-#
-#     def validate(self, data):
-#         data = data['HTTP_AUTHORIZATION'].replace('token ', '')
-#         if Token.objects.filter(key=data).exists():
-#             Token.objects.filter(key=data).delete()
-#             return True
-#         else:
-#             return False
 
 
 class ProfileSerializer(serializers.ModelSerializer):

@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from users.models import Profile
 from .models import Question, Answer, AdjectiveList, NounList
-from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRejectedSerializer, \
+from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRefusedSerializer, \
     AnswerCreateSerializer, TimelineSerializer
 from config.ip_address_gatherer import get_client_ip
 import threading
@@ -94,7 +94,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class QuestionUnansweredAPIView(generics.GenericAPIView):
+class QuestionArrivedAPIView(generics.GenericAPIView):
     queryset = Question.objects.all()
 
     @swagger_auto_schema(tags=['미답변 질문 리스트'])
@@ -113,8 +113,8 @@ class QuestionUnansweredAPIView(generics.GenericAPIView):
             return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class QuestionRejectedAPIView(generics.GenericAPIView):
-    serializer_class = QuestionRejectedSerializer
+class QuestionRefusedAPIView(generics.GenericAPIView):
+    serializer_class = QuestionRefusedSerializer
     queryset = Question.objects.all()
 
     @swagger_auto_schema(tags=['거절 질문 리스트'])

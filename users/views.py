@@ -72,24 +72,13 @@ class LoginView(generics.GenericAPIView):
             validated_data = serializer.validated_data
             User.objects.filter(username=validated_data['user'].username).update(last_login=datetime.datetime.now())
             Profile.objects.filter(user=validated_data['user']).update(recent_access_ip=get_client_ip(request))
-            logger.info('Login Success Username : ' + str(validated_data['user'].username) + ' IP : ' + str(get_client_ip(request)))
+            logger.info('Login Success Username : ' + str(validated_data['user'].username) + ' IP : ' + str(
+                get_client_ip(request)))
             return Response(
-                {'username': validated_data['user'].username, 'refresh_token': validated_data['refresh_token'], 'access_token': validated_data['access_token']},
+                {'username': validated_data['user'].username, 'refresh_token': validated_data['refresh_token'],
+                 'access_token': validated_data['access_token']},
                 status=status.HTTP_200_OK)
         raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
-
-
-
-# class LogoutView(generics.GenericAPIView):
-#     serializer_class = LogoutSerializer
-#
-#     @swagger_auto_schema(tags=['로그아웃'])
-#     def get(self, request):
-#         serializer = self.get_serializer(data=request.META)
-#         if serializer.is_valid(raise_exception=True):
-#             logger.info(
-#                 'Logout Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request)))
-#             return Response({'info': '로그아웃되었습니다.'}, status=status.HTTP_200_OK)
 
 
 class ProfileGetAPIView(generics.GenericAPIView):
