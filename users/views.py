@@ -16,12 +16,15 @@ from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Profile, ForbiddenUsername
+from .models import Profile, ForbiddenUsername, APNsDevice
 from .serializers import RegisterSerializer, ProfileSerializer, \
-    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer
+    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer, \
+    APNsDeviceSerializer
 
 import threading
 from config.ip_address_gatherer import get_client_ip
+
+from Exceptions.FCMException import *
 
 logger = logging.getLogger('chatty')
 
@@ -156,7 +159,7 @@ class FollowUserView(generics.GenericAPIView):
 
     @swagger_auto_schema(tages=['사용자 팔로우'])
     def post(self, request):
-        serializer = FollowUserSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if request.user.is_authenticated:
             if serializer.is_valid():
                 target = get_object_or_404(User, username=serializer.data['username'])
@@ -197,3 +200,19 @@ class RankingView(generics.GenericAPIView):
                 question_count=Count('question_target_profile')).order_by('-question_count')[:10],
             many=True)
         return Response(serializer.data)
+
+
+class APNsDeviceView(generics.GenericAPIView):
+    queryset = APNsDevice
+    serializer_class = APNsDeviceSerializer
+
+    @swagger_auto_schema(tags=['APNs 기기 등록'])
+    def post(self, request):
+        if request.user.is_authenticated:
+            APNsDevice.objects.create(user=request.user, token=request.data["token"])
+            logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
+                request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
+            return Response({'info' : 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        else:
+            logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
+            raise APNsDeviceRegisterError()

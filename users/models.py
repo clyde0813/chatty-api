@@ -25,6 +25,12 @@ class Profile(models.Model):
     recent_access_ip = models.CharField(max_length=20, blank=True)
 
 
+class APNsDevice(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=200)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+
 class ForbiddenUsername(models.Model):
     username = models.CharField(max_length=200, null=True, blank=True)
 

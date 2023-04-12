@@ -7,12 +7,13 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from users.models import Profile
+from users.models import Profile, APNsDevice
 from .models import Question, Answer, AdjectiveList, NounList
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRefusedSerializer, \
     AnswerCreateSerializer, TimelineSerializer
 from config.ip_address_gatherer import get_client_ip
 import threading
+from firebase_admin import messaging
 
 logger = logging.getLogger('chatty')
 
@@ -64,6 +65,16 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                        choice(NounList.objects.values_list('word'))[0])
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
+            APNsDevice_list = list(APNsDevice.objects.filter(user=target_profile.user).values_list('token', flat=True))
+            fcm_token_list = APNsDevice_list
+            for i in fcm_token_list:
+                messaging.send(messaging.Message(
+                    notification=messaging.Notification(
+                        title='Chatty',
+                        body='새로운 질문이 도착했어요!\n내용 : '+str(question_object.content),
+                    ),
+                    token=i,
+                ))
             return Response(
                 {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
                  'content': question_object.content,

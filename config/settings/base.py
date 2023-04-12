@@ -18,6 +18,9 @@ import sys, json
 from django.core.exceptions import ImproperlyConfigured
 import pymysql
 
+import firebase_admin
+from firebase_admin import credentials
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ROOT_DIR = os.path.dirname(BASE_DIR)
 
@@ -154,8 +157,14 @@ CACHES = {
 AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
 AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
 
+
+cred_path = os.path.join(BASE_DIR, "Certificate/chatty-sns-firebase-adminsdk-f8c5k-2707456d57.json")
+cred = credentials.Certificate(cred_path)
+firebase_admin.initialize_app(cred)
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
+
 
 AUTH_PASSWORD_VALIDATORS = []
 

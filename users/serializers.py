@@ -9,7 +9,7 @@ from rest_framework import serializers, exceptions
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from users.models import Profile, ForbiddenUsername
+from users.models import Profile, ForbiddenUsername, APNsDevice
 from posts.models import Question
 from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
@@ -150,3 +150,11 @@ class RankingSerializer(serializers.ModelSerializer):
 
     def get_question_count(self, obj):
         return obj.question_target_profile.filter(delete_status=False, answer__isnull=False).count()
+
+
+class APNsDeviceSerializer(serializers.ModelSerializer):
+    token = serializers.CharField(max_length=200, required=True)
+
+    class Meta:
+        model = APNsDevice
+        fields = ('token',)

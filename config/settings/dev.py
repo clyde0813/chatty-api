@@ -1,7 +1,7 @@
 from .base import *
 import pymysql
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['chatty.kr', "*"]
 
