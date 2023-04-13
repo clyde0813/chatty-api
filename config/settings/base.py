@@ -52,9 +52,9 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
 
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
-    "VERIFYING_KEY": "",
+    "ALGORITHM": "RS256",
+    "SIGNING_KEY": get_secret("JWT_SIGNING_KEY"),
+    "VERIFYING_KEY": get_secret("JWT_VERIFYING_KEY"),
     "AUDIENCE": None,
     "ISSUER": None,
     "JSON_ENCODER": None,
