@@ -10,6 +10,7 @@ class Question(models.Model):
     target_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='question_target_profile')
     content = models.CharField(max_length=100)
     refusal_status = models.BooleanField(default=False)
+    refused_date = models.DateTimeField(null=True)
     created_date = models.DateTimeField(auto_now_add=True)
     delete_status = models.BooleanField(default=False)
 

@@ -132,7 +132,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
     def get(self, request):
         if request.user.is_authenticated:
             instance = self.queryset.filter(target_profile__user=self.request.user, answer__isnull=True,
-                                            refusal_status=True, delete_status=False).order_by('-created_date')
+                                            refusal_status=True, delete_status=False).order_by('-refused_date')
             paginator = CustomPagination()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
@@ -151,7 +151,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
                                                       answer__isnull=True, refusal_status=False, delete_status=False)
             if question_object.exists() is True:
                 question_data = question_object.get()
-                question_object.update(refusal_status=True)
+                question_object.update(refused_date=datetime.datetime.now(), refusal_status=True)
                 logger.info('Question Rejected Post Success Username : ' + str(request.user.username) + ' IP : ' +
                             str(get_client_ip(request)))
                 return Response({'info': '질문 거절 완료', 'pk': question_data.pk, 'nickname': question_data.nickname,
