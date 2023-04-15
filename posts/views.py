@@ -145,6 +145,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['질문 거절'])
     def post(self, request):
+        serializer = self.get_serializer()
         if request.user.is_authenticated:
             question_object = Question.objects.filter(target_profile__user=request.user,
                                                       pk=request.data['question_id'],
@@ -163,10 +164,10 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
                 logger.error(
                     'Question Reject Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                     str(get_client_ip(request)))
-                return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
         else:
             logger.error('Question Reject Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
 
 
 class AnswerCreateAPIView(generics.GenericAPIView):
@@ -174,6 +175,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['답변 등록'])
     def post(self, request):
+        serializer = self.get_serializer()
         if request.user.is_authenticated:
             question_instance = Question.objects.filter(target_profile__user=request.user,
                                                         pk=request.data['question_id'], answer__isnull=True,
@@ -195,10 +197,10 @@ class AnswerCreateAPIView(generics.GenericAPIView):
             else:
                 logger.error('Answer Post Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                              str(get_client_ip(request)))
-                return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
         else:
             logger.error('Answer Post Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_401_UNAUTHORIZED)
+            raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
 
 
 class TimelineAPIView(generics.GenericAPIView):
