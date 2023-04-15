@@ -198,7 +198,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 return Response({'error': '해당 질문이 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             logger.error('Answer Post Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class TimelineAPIView(generics.GenericAPIView):
