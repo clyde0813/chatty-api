@@ -15,6 +15,8 @@ from config.ip_address_gatherer import get_client_ip
 import threading
 from firebase_admin import messaging
 
+from Exceptions.UnauthorizedExceptions import *
+
 logger = logging.getLogger('chatty')
 
 
@@ -167,7 +169,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
                 raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
         else:
             logger.error('Question Reject Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
+            raise UnauthorizedError()
 
 
 class AnswerCreateAPIView(generics.GenericAPIView):
@@ -200,7 +202,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
         else:
             logger.error('Answer Post Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
+            raise UnauthorizedError()
 
 
 class TimelineAPIView(generics.GenericAPIView):
