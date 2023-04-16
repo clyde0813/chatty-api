@@ -14,7 +14,7 @@ from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionR
 from config.ip_address_gatherer import get_client_ip
 import threading
 from firebase_admin import messaging
-
+from firebase_admin._messaging_utils import UnregisteredError
 from Exceptions.UnauthorizedExceptions import *
 
 logger = logging.getLogger('chatty')
@@ -67,16 +67,20 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                        choice(NounList.objects.values_list('word'))[0])
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
-            APNsDevice_list = list(APNsDevice.objects.filter(user=target_profile.user).values_list('token', flat=True))
+            APNsDevice_list = list(APNsDevice.objects.filter(user=target_profile.user, status=True).values_list('token', flat=True))
             fcm_token_list = APNsDevice_list
             for i in fcm_token_list:
-                messaging.send(messaging.Message(
-                    notification=messaging.Notification(
-                        title='Chatty',
-                        body='새로운 질문이 도착했어요!',
-                    ),
-                    token=i,
-                ))
+                try:
+                    messaging.send(messaging.Message(
+                        notification=messaging.Notification(
+                            title='Chatty',
+                            body='새로운 질문이 도착했어요!',
+                        ),
+                        token=i,
+                    ))
+                except Exception as e:
+                    logger.error('APNs ' + str(e) + '\ntoken : ' + i)
+                    APNsDevice.objects.get(token=i).delete()
             return Response(
                 {'info': '등록완료', 'pk': question_object.pk, 'nickname': question_object.nickname,
                  'content': question_object.content,
