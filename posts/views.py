@@ -73,7 +73,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 messaging.send(messaging.Message(
                     notification=messaging.Notification(
                         title='Chatty',
-                        body='새로운 질문이 도착했어요!\n내용 : '+str(question_object.content),
+                        body='새로운 질문이 도착했어요!',
                     ),
                     token=i,
                 ))

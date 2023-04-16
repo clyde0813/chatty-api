@@ -24,6 +24,7 @@ from .serializers import RegisterSerializer, ProfileSerializer, \
 import threading
 from config.ip_address_gatherer import get_client_ip
 
+from Exceptions.LoginExceptions import *
 from Exceptions.FCMException import *
 
 logger = logging.getLogger('chatty')
@@ -81,7 +82,8 @@ class LoginView(generics.GenericAPIView):
                 {'username': validated_data['user'].username, 'refresh_token': validated_data['refresh_token'],
                  'access_token': validated_data['access_token']},
                 status=status.HTTP_200_OK)
-        raise serializer.ValidationError({"error": "로그인 정보가 정확하지 않습니다."})
+        else:
+            raise LoginDataMismatchError()
 
 
 class ProfileGetAPIView(generics.GenericAPIView):
