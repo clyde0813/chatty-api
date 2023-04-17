@@ -6,8 +6,7 @@ def custom_exception_handler(exc, context):
     if response is not None:
         try:
             response.data['error'] = str(response.data["detail"])
-        except:
+        except Exception as e:
             pass
         response.data['status_code'] = response.status_code
-        del response.data['detail']
     return response

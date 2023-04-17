@@ -46,7 +46,7 @@ SECRET_KEY = get_secret("SECRET_KEY")
 # Application definition
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -86,6 +86,8 @@ SIMPLE_JWT = {
 }
 
 INSTALLED_APPS = [
+    'user',
+    'chatty',
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework_simplejwt',
     'django.contrib.auth',
@@ -95,9 +97,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'storages',
     'rest_framework',
-    'users',
-    'posts',
-    'community',
     'corsheaders',
     'django_filters',
     'drf_yasg',
