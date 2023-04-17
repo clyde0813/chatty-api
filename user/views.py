@@ -12,6 +12,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import Profile, APNsDevice
 from .serializers import RegisterSerializer, ProfileSerializer, \
@@ -34,9 +35,24 @@ def send_mail(subject, message, recipient_list, from_email):
                    fail_silently=False)
 
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
+class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
+
+    @swagger_auto_schema(tags=['회원가입'])
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=False):
+            validated_data = serializer.validated_data
+            user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
+            user.set_password(validated_data['password'])
+            user.last_login = datetime.datetime.now()
+            user.save()
+            Profile.objects.filter(user=user).update(profile_name=validated_data['profile_name'],
+                                                     recent_access_ip=get_client_ip(request))
+            token = TokenObtainPairSerializer.get_token(user)
+            return Response({'user': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)}, status=status.HTTP_201_CREATED)
+        else:
+            raise DataInaccuracyError()
 
 
 class EmailVerificationView(generics.GenericAPIView):

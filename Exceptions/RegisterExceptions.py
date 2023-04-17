@@ -11,3 +11,9 @@ class UsernameAlreadyTakenError(APIException):
     status_code = 400
     default_detail = "이미 사용중인 아이디입니다."
     default_code = "Validate Failed"
+
+
+class PasswordInconsistencyError(APIException):
+    status_code = 400
+    default_detail = "비밀번호가 일치하지 않습니다."
+    default_code = "Validate Failed"

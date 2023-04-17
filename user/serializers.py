@@ -16,27 +16,16 @@ from Exceptions.LoginExceptions import *
 from Exceptions.RegisterExceptions import *
 
 
-class RegisterSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())],
-                                     min_length=4, max_length=20)
-
-    profile_name = serializers.CharField(source='profile.profile_name', required=True, min_length=1, max_length=20)
-
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password], min_length=8,
-                                     max_length=15)
-    password2 = serializers.CharField(write_only=True, required=True)
-
-    class Meta:
-        model = User
-        fields = ('username', 'profile_name', 'password', 'password2', 'email')
+class RegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, min_length=4, max_length=20)
+    profile_name = serializers.CharField(required=True, min_length=1, max_length=20)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, min_length=8, max_length=15)
+    password2 = serializers.CharField(required=True)
 
     def validate(self, data):
         if data['password'] != data['password2']:
-            raise serializers.ValidationError({'password': '비밀번호가 일치하지 않습니다.'})
+            raise PasswordInconsistencyError()
 
         if User.objects.filter(username=data['username']).exists():
             raise UsernameAlreadyTakenError()
@@ -45,15 +34,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise EmailAlreadyTakenError()
 
         return data
-
-    def create(self, validated_data):
-        user = User.objects.create_user(username=validated_data['username'], email=validated_data['email'])
-        user.set_password(validated_data['password'])
-        user.last_login = datetime.datetime.now()
-        user.save()
-        Profile.objects.filter(user=user).update(profile_name=self.data['profile_name'],
-                                                 recent_access_ip=get_client_ip(self.context['request']))
-        return user
 
 
 class EmailVerificationSerializer(serializers.Serializer):
