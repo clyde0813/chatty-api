@@ -17,3 +17,9 @@ class PasswordInconsistencyError(APIException):
     status_code = 400
     default_detail = "비밀번호가 일치하지 않습니다."
     default_code = "Validate Failed"
+
+
+class PasswordLengthError(APIException):
+    status_code = 400
+    default_detail = "비밀번호 길이가 부적합합니다."
+    default_code = "Validate Failed"

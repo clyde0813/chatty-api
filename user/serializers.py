@@ -21,9 +21,11 @@ class RegisterSerializer(serializers.Serializer):
     profile_name = serializers.CharField(required=True, min_length=1, max_length=20)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, min_length=8, max_length=15)
-    password2 = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, min_length=8, max_length=15)
 
     def validate(self, data):
+        if len(data['password']) < 8 or 15 < len(data['password']):
+            raise PasswordLengthError()
         if data['password'] != data['password2']:
             raise PasswordInconsistencyError()
 
