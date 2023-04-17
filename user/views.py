@@ -7,7 +7,6 @@ import logging
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from django.core import mail
 from rest_framework import generics, status
 from rest_framework.response import Response
 
@@ -30,11 +29,6 @@ from Exceptions.UnauthorizedExceptions import *
 logger = logging.getLogger('chatty')
 
 
-def send_mail(subject, message, recipient_list, from_email):
-    mail.send_mail(subject=subject, message=message, recipient_list=recipient_list, from_email=from_email,
-                   fail_silently=False)
-
-
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
 
@@ -50,7 +44,9 @@ class RegisterView(generics.GenericAPIView):
             Profile.objects.filter(user=user).update(profile_name=validated_data['profile_name'],
                                                      recent_access_ip=get_client_ip(request))
             token = TokenObtainPairSerializer.get_token(user)
-            return Response({'user': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)}, status=status.HTTP_201_CREATED)
+            return Response(
+                {'user': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)},
+                status=status.HTTP_201_CREATED)
         else:
             raise DataInaccuracyError()
 
@@ -62,10 +58,7 @@ class EmailVerificationView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            if User.objects.filter(email=serializer.data['email']).exists():
-                raise EmailAlreadyTakenError()
-            else:
-                return Response({'info': '사용 가능한 이메일입니다.'}, status=status.HTTP_200_OK)
+            return Response({'info': '사용 가능한 이메일입니다.'}, status=status.HTTP_200_OK)
         else:
             raise DataInaccuracyError()
 

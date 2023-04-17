@@ -4,6 +4,7 @@ import re
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 
 from rest_framework import serializers, exceptions
 from rest_framework.validators import UniqueValidator
@@ -26,6 +27,7 @@ class RegisterSerializer(serializers.Serializer):
     def validate(self, data):
         if len(data['password']) < 8 or 15 < len(data['password']):
             raise PasswordLengthError()
+
         if data['password'] != data['password2']:
             raise PasswordInconsistencyError()
 
@@ -41,6 +43,13 @@ class RegisterSerializer(serializers.Serializer):
 class EmailVerificationSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
+
+    def validate(self, data):
+        if User.objects.filter(email=data['email']).exists():
+            raise EmailAlreadyTakenError()
+        if validate_email(data['email']):
+            raise EmailAlreadyTakenError()
+        return data
 
 
 class LoginSerializer(serializers.Serializer):
