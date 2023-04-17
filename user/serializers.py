@@ -30,7 +30,7 @@ class RegisterSerializer(serializers.Serializer):
         if User.objects.filter(username=data['username']).exists():
             raise UsernameAlreadyTakenError()
 
-        if User.objects.filter(username=data['email']).exists():
+        if User.objects.filter(email=data['email']).exists():
             raise EmailAlreadyTakenError()
 
         return data
