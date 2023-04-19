@@ -185,7 +185,7 @@ class RankingView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['랭킹'])
     def get(self, request):
         serializer = RankingSerializer(
-            self.queryset.objects.filter(username__is_staff=False,
+            self.queryset.objects.filter(user__is_staff=False,
                                          question_target_profile__delete_status=False,
                                          question_target_profile__answer__isnull=False).all().annotate(
                 question_count=Count('question_target_profile')).order_by('-question_count')[:50],

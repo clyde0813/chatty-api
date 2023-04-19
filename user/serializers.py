@@ -119,6 +119,7 @@ class FollowUserSerializer(serializers.ModelSerializer):
 
 
 class RankingSerializer(serializers.ModelSerializer):
+    ranking = serializers.IntegerField()
     username = serializers.CharField(source='user.username', required=False)
     profile_image = serializers.ImageField(required=False)
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
@@ -129,6 +130,7 @@ class RankingSerializer(serializers.ModelSerializer):
 
     def get_question_count(self, obj):
         return obj.question_target_profile.filter(delete_status=False, answer__isnull=False).count()
+
 
 
 class APNsDeviceSerializer(serializers.Serializer):
