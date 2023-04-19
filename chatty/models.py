@@ -12,6 +12,7 @@ class Question(models.Model):
     refused_date = models.DateTimeField(null=True)
     created_date = models.DateTimeField(auto_now_add=True)
     delete_status = models.BooleanField(default=False)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='question_author', null=True)
 
 
 class Answer(models.Model):

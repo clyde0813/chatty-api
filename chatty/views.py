@@ -1,8 +1,5 @@
 import datetime
-import random
-from random import choice
 import logging
-from django.core import mail
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
 from rest_framework.pagination import PageNumberPagination
@@ -12,17 +9,13 @@ from .models import Question, Answer
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRefusedSerializer, \
     AnswerCreateSerializer, TimelineSerializer
 from config.ip_address_gatherer import get_client_ip
-import threading
 from firebase_admin import messaging
-from firebase_admin._messaging_utils import UnregisteredError
+
 from Exceptions.UnauthorizedExceptions import *
+from Exceptions.ChattyExceptions import *
+from Exceptions.BaseExceptions import *
 
 logger = logging.getLogger('chatty')
-
-
-def send_mail(subject, message, recipient_list, from_email, fail_silently):
-    mail.send_mail(subject=subject, message=message, recipient_list=recipient_list, from_email=from_email,
-                   fail_silently=fail_silently)
 
 
 class CustomPagination(PageNumberPagination):
@@ -50,7 +43,7 @@ class QuestionGetAPIView(generics.GenericAPIView):
             return paginator.get_paginated_response(serializer.data)
         else:
             logger.error('Question Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
-            return Response({'error': '존재하지 않는 유저입니다.'}, status=status.HTTP_404_NOT_FOUND)
+            raise DataInaccuracyError()
 
 
 class QuestionCreateAPIView(generics.GenericAPIView):
@@ -58,15 +51,19 @@ class QuestionCreateAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
+        if request.user.is_authenticated:
+            author = request.user
+        else:
+            author = None
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
             target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
-                                              target_profile=target_profile)
+                                              target_profile=target_profile, author=author)
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
             APNsDevice_list = list(
-                APNsDevice.objects.filter(user=target_profile.user, status=True).values_list('token', flat=True))
+                APNsDevice.objects.filter(user=target_profile.user).values_list('token', flat=True))
             fcm_token_list = APNsDevice_list
             for i in fcm_token_list:
                 try:
@@ -88,7 +85,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 status=status.HTTP_200_OK)
         else:
             logger.error('Question Post Failed IP : ' + str(get_client_ip(request)))
-            return Response({'error': '질문 등록 실패'}, status=status.HTTP_400_BAD_REQUEST)
+            raise DataInaccuracyError()
 
     @swagger_auto_schema(tags=['질문 삭제'])
     def delete(self, request):
@@ -104,10 +101,10 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 logger.error(
                     'Question Delete Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                     str(get_client_ip(request)))
-                return Response({'error': '해당 질문 없음'}, status=status.HTTP_400_BAD_REQUEST)
+                raise DataInaccuracyError()
         else:
             logger.error('Question Delete Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            raise UnauthorizedError()
 
 
 class QuestionArrivedAPIView(generics.GenericAPIView):
@@ -126,7 +123,7 @@ class QuestionArrivedAPIView(generics.GenericAPIView):
             return paginator.get_paginated_response(serializer.data)
         else:
             logger.error('Question Unanswered Get Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            raise UnauthorizedError()
 
 
 class QuestionRefusedAPIView(generics.GenericAPIView):
@@ -146,7 +143,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
             return paginator.get_paginated_response(serializer.data)
         else:
             logger.error('Question Rejected Get Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            raise UnauthorizedError()
 
     @swagger_auto_schema(tags=['질문 거절'])
     def post(self, request):
@@ -169,7 +166,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
                 logger.error(
                     'Question Reject Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                     str(get_client_ip(request)))
-                raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
+                raise DataInaccuracyError()
         else:
             logger.error('Question Reject Failed - Unauthorized IP : ' + str(get_client_ip(request)))
             raise UnauthorizedError()
@@ -180,18 +177,31 @@ class AnswerCreateAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['답변 등록'])
     def post(self, request):
-        serializer = self.get_serializer()
         if request.user.is_authenticated:
             question_instance = Question.objects.filter(target_profile__user=request.user,
                                                         pk=request.data['question_id'], answer__isnull=True,
                                                         refusal_status=False, delete_status=False)
             if question_instance.exists() is True:
-                # 자문자답 임시 허용
-                # if question_instance.get().author_ip != get_client_ip(request):
                 question_data = question_instance.get()
                 Answer.objects.create(question_id=request.data['question_id'],
                                       author_profile=Profile.objects.get(user=request.user),
                                       author_ip=get_client_ip(request), content=request.data['content'])
+                if question_data.author is not None:
+                    APNsDevice_list = list(
+                        APNsDevice.objects.filter(user=question_data.author).values_list('token', flat=True))
+                    fcm_token_list = APNsDevice_list
+                    for i in fcm_token_list:
+                        try:
+                            messaging.send(messaging.Message(
+                                notification=messaging.Notification(
+                                    title='Chatty',
+                                    body='답변이 도착했어요!',
+                                ),
+                                token=i,
+                            ))
+                        except Exception as e:
+                            logger.error('APNs ' + str(e) + '\ntoken : ' + i)
+                            APNsDevice.objects.get(token=i).delete()
                 logger.info('Answer Post Success Username : ' + str(request.user.username) + ' IP : ' +
                             str(get_client_ip(request)))
                 return Response({'info': '답변 등록 완료', 'pk': question_data.pk,
@@ -202,7 +212,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
             else:
                 logger.error('Answer Post Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
                              str(get_client_ip(request)))
-                raise serializer.ValidationError({"error": "해당 질문은 존재하지 않습니다."})
+                raise DataInaccuracyError()
         else:
             logger.error('Answer Post Failed - Unauthorized IP : ' + str(get_client_ip(request)))
             raise UnauthorizedError()
@@ -221,4 +231,4 @@ class TimelineAPIView(generics.GenericAPIView):
             serializer = TimelineSerializer(instance, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'error': '로그인 후 이용가능합니다'}, status=status.HTTP_400_BAD_REQUEST)
+            raise UnauthorizedError()
