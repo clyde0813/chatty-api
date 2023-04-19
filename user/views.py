@@ -199,28 +199,22 @@ class APNsDeviceView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['APNs 기기 등록'])
     def post(self, request):
-        if request.data["initialize"] is True and self.queryset.objects.filter(token=request.data["token"]).exists():
-            query = self.queryset.objects.filter(token=request.data["token"]).all()
-            query.delete()
-            return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
-        else:
-            if request.user.is_authenticated:
-                query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
-                if query.exists():
-                    return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
-                else:
-                    APNsDevice.objects.create(user=request.user, token=request.data["token"])
-                    logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
-                        request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
-                    return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
-            else:
-                logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
-                raise APNsDeviceRegisterError()
-
-    @swagger_auto_schema(tags=['FCM Token 비활성화'])
-    def delete(self, request):
         if request.user.is_authenticated:
             query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
             if query.exists():
-                query.delete()
-        return Response({'info': 'fcm 토큰 비활성화 완료'}, status=status.HTTP_200_OK)
+                return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
+            else:
+                APNsDevice.objects.create(user=request.user, token=request.data["token"])
+                logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
+                    request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
+                return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        else:
+            logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
+            raise APNsDeviceRegisterError()
+
+    @swagger_auto_schema(tags=['FCM Token 비활성화'])
+    def delete(self, request):
+        if self.queryset.objects.filter(token=request.data["token"]).exists():
+            query = self.queryset.objects.filter(token=request.data["token"]).all()
+            query.delete()
+        return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
