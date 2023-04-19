@@ -45,7 +45,7 @@ class RegisterView(generics.GenericAPIView):
                                                      recent_access_ip=get_client_ip(request))
             token = TokenObtainPairSerializer.get_token(user)
             return Response(
-                {'user': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)},
+                {'username': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)},
                 status=status.HTTP_201_CREATED)
         else:
             raise DataInaccuracyError()
