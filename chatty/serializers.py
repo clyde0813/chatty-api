@@ -6,6 +6,7 @@ from user.models import Profile
 
 from Exceptions.BaseExceptions import *
 
+
 class AnswerCreateSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(required=True, write_only=True)
     content = serializers.CharField(required=True, write_only=True)

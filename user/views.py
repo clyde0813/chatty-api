@@ -190,7 +190,12 @@ class RankingView(generics.GenericAPIView):
                                          question_target_profile__answer__isnull=False).all().annotate(
                 question_count=Count('question_target_profile')).order_by('-question_count')[:50],
             many=True)
-        return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
+        return_dict = {}
+        id = 0
+        for data in serializer.data:
+            id += 1
+            return_dict[id] = data
+        return Response({"ranking": return_dict}, status=status.HTTP_200_OK)
 
 
 class APNsDeviceView(generics.GenericAPIView):
