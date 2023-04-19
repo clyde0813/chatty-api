@@ -1,4 +1,4 @@
-django
+django==4.1.2
 djangorestframework
 django-filter
 drf-yasg
@@ -8,3 +8,7 @@ pymysql
 django-ses
 django-redis
 django-storages
+djangorestframework-simplejwt
+django-resized
+apns2
+pillow

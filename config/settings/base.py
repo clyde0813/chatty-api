@@ -10,12 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
+from datetime import timedelta
 from os.path import join
 from pathlib import Path
 import sys, json
 
 from django.core.exceptions import ImproperlyConfigured
 import pymysql
+
+import firebase_admin
+from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ROOT_DIR = os.path.dirname(BASE_DIR)
@@ -41,8 +45,51 @@ SECRET_KEY = get_secret("SECRET_KEY")
 
 # Application definition
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,
+
+    "ALGORITHM": "RS256",
+    "SIGNING_KEY": get_secret("JWT_SIGNING_KEY"),
+    "VERIFYING_KEY": get_secret("JWT_VERIFYING_KEY"),
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "JSON_ENCODER": None,
+    "JWK_URL": None,
+    "LEEWAY": 0,
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+
+    "JTI_CLAIM": "jti",
+
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+
+    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
+    "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
+    "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
+    "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
+    "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
+}
+
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'user',
+    'chatty',
+    'rest_framework_simplejwt.token_blacklist',
+    'rest_framework_simplejwt',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -50,13 +97,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'storages',
     'rest_framework',
-    'rest_framework.authtoken',
-    'users',
-    'posts',
-    'chats',
     'corsheaders',
     'django_filters',
-    'drf_yasg'
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -101,39 +144,32 @@ CACHES = {
     }
 }
 
-# Google mail
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'no.reply.chatty.kr@gmail.com'
-EMAIL_HOST_PASSWORD = get_secret('GMAIL_APP_PW')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# # Google mail
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_USE_TLS = True
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'no.reply.chatty.kr@gmail.com'
+# EMAIL_HOST_PASSWORD = get_secret('GMAIL_APP_PW')
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# AWS SES
-# EMAIL_BACKEND = 'django_ses.SESBackend'
 AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
 AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
-# AWS_SES_REGION_NAME = get_secret('AWS_REGION')
 
-# AWS S3 Storages
-AWS_STORAGE_BUCKET_NAME = get_secret('AWS_BUCKET_NAME')
-AWS_S3_CUSTOM_DOMAIN = get_secret('AWS_S3_DOMAIN')
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-AWS_DEFAULT_ACL = 'public-read'
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+cred_path = os.path.join(BASE_DIR, "Certificate/chatty-sns-firebase-adminsdk-f8c5k-2707456d57.json")
+cred = credentials.Certificate(cred_path)
+firebase_admin.initialize_app(cred)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
+
 
 AUTH_PASSWORD_VALIDATORS = []
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'EXCEPTION_HANDLER': 'config.exception_handler.custom_exception_handler',
     'DEFAULT_RENDERER_CLASSES': (
@@ -142,35 +178,16 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': get_secret('NAME'),
-        'TEST': {
-            'NAME': get_secret('TEST_NAME'),
-        },
-        'USER': get_secret('USER'),
-        'PASSWORD': get_secret('PASSWORD'),
-        'HOST': get_secret('HOST'),
-        'PORT': get_secret('PORT'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-            'use_unicode': True,
-        }
-    },
-}
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
+        # 'require_debug_false': {
+        #     '()': 'django.utils.log.RequireDebugFalse',
+        # },
+        # 'require_debug_true': {
+        #     '()': 'django.utils.log.RequireDebugTrue',
+        # },
     },
     'formatters': {
         'django.server': {
@@ -185,7 +202,7 @@ LOGGING = {
     'handlers': {
         'console': {
             'level': 'INFO',
-            'filters': ['require_debug_true'],
+            # 'filters': ['require_debug_false'],
             'class': 'logging.StreamHandler',
         },
         'django.server': {
@@ -195,7 +212,7 @@ LOGGING = {
         },
         'file': {
             'level': 'INFO',
-            'filters': ['require_debug_false'],
+            # 'filters': ['require_debug_false'],
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': join(BASE_DIR, 'logs/chatty.log'),
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
@@ -248,8 +265,8 @@ STATICFILES_DIRS = [
     STATIC_DIR,
 ]
 STATIC_ROOT = os.path.join(ROOT_DIR, '../../../../.static_root')
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 

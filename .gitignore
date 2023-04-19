@@ -122,3 +122,6 @@ Secrets.json
 media
 .idea
 logs
+Certificate
+/Certificate
+*.p8
