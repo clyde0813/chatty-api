@@ -4,6 +4,7 @@ from user.serializers import ProfileSerializer
 from .models import Question, Answer
 from user.models import Profile
 
+from Exceptions.BaseExceptions import *
 
 class AnswerCreateSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(required=True, write_only=True)
@@ -30,7 +31,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if Profile.objects.filter(user__username=data['target_profile']).exists():
             return data
-        raise serializers.ValidationError({'error': '질문 대상이 잘못되었습니다.'})
+        raise DataInaccuracyError()
 
     class Meta:
         model = Question
