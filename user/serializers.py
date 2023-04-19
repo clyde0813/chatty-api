@@ -131,10 +131,7 @@ class RankingSerializer(serializers.ModelSerializer):
         return obj.question_target_profile.filter(delete_status=False, answer__isnull=False).count()
 
 
-class APNsDeviceSerializer(serializers.ModelSerializer):
-    initialize = serializers.BooleanField(default=False)
+class APNsDeviceSerializer(serializers.Serializer):
+    initialize = serializers.BooleanField(default=False, required=False)
     token = serializers.CharField(max_length=200, required=True)
 
-    class Meta:
-        model = APNsDevice
-        fields = ('token',)
