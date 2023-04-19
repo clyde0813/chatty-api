@@ -119,7 +119,6 @@ class FollowUserSerializer(serializers.ModelSerializer):
 
 
 class RankingSerializer(serializers.ModelSerializer):
-    ranking = serializers.IntegerField()
     username = serializers.CharField(source='user.username', required=False)
     profile_image = serializers.ImageField(required=False)
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
