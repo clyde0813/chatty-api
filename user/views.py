@@ -117,7 +117,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                     except Exception as e:
                         logger.info('Profile Put Failed Username : ' + str(request.user.username) + ' IP : ' +
                                     str(get_client_ip(request)) + ' Error : ' + str(e))
-                        return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+                        return DataInaccuracyError()
 
             if 'profile_message' in serializer.data:
                 instance.update(profile_message=serializer.data['profile_message'])
@@ -156,7 +156,7 @@ class FollowUserView(generics.GenericAPIView):
                 target = get_object_or_404(User, username=serializer.data['username'])
                 request_user = Profile.objects.get(user=request.user)
                 if request.user == target:
-                    return Response({'info': '본인은 팔로우 불가합니다.'}, status=status.HTTP_200_OK)
+                    return DataInaccuracyError()
                 elif target.profile.follower.filter(username=request.user).exists():
                     target.profile.follower.remove(request.user)
                     request_user.following.remove(target)
@@ -172,10 +172,10 @@ class FollowUserView(generics.GenericAPIView):
                     return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
             else:
-                return Response({'error': 'key value 오류'}, status=status.HTTP_400_BAD_REQUEST)
+                return DataInaccuracyError()
         else:
             logger.error('Follow Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return UnauthorizedError()
 
 
 class RankingView(generics.GenericAPIView):
@@ -188,7 +188,7 @@ class RankingView(generics.GenericAPIView):
             self.queryset.objects.filter(username__is_staff=False,
                                          question_target_profile__delete_status=False,
                                          question_target_profile__answer__isnull=False).all().annotate(
-                question_count=Count('question_target_profile')).order_by('-question_count')[:10],
+                question_count=Count('question_target_profile')).order_by('-question_count')[:50],
             many=True)
         return Response(serializer.data)
 
@@ -199,24 +199,28 @@ class APNsDeviceView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['APNs 기기 등록'])
     def post(self, request):
-        if request.user.is_authenticated:
-            query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
-            if query.exists():
-                query.update(created_date=datetime.datetime.now(), status=True)
-                return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
-            else:
-                APNsDevice.objects.create(user=request.user, token=request.data["token"], status=True)
-                logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
-                    request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
-                return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        if request.data["initialize"] is True and self.queryset.objects.filter(token=request.data["token"]).exists():
+            query = self.queryset.objects.filter(token=request.data["token"]).all()
+            query.delete()
+            return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
-            raise APNsDeviceRegisterError()
+            if request.user.is_authenticated:
+                query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
+                if query.exists():
+                    return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
+                else:
+                    APNsDevice.objects.create(user=request.user, token=request.data["token"])
+                    logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
+                        request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
+                    return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+            else:
+                logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
+                raise APNsDeviceRegisterError()
 
     @swagger_auto_schema(tags=['FCM Token 비활성화'])
     def delete(self, request):
         if request.user.is_authenticated:
-            query = APNsDevice.objects.filter(user=request.user, token=request.data["token"], status=True)
+            query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
             if query.exists():
-                query.update(status=False)
+                query.delete()
         return Response({'info': 'fcm 토큰 비활성화 완료'}, status=status.HTTP_200_OK)

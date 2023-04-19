@@ -3,11 +3,9 @@ import re
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
 
 from rest_framework import serializers, exceptions
-from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from user.models import Profile, APNsDevice
@@ -134,6 +132,7 @@ class RankingSerializer(serializers.ModelSerializer):
 
 
 class APNsDeviceSerializer(serializers.ModelSerializer):
+    initialize = serializers.BooleanField(default=False)
     token = serializers.CharField(max_length=200, required=True)
 
     class Meta:

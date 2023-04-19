@@ -28,7 +28,6 @@ class APNsDevice(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.CharField(max_length=200)
     created_date = models.DateTimeField(auto_now_add=True)
-    status = models.BooleanField(default=True)
 
 
 @receiver(post_save, sender=User)
