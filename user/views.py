@@ -186,8 +186,7 @@ class RankingView(generics.GenericAPIView):
     def get(self, request):
         serializer = RankingSerializer(
             self.queryset.objects.filter(user__is_staff=False,
-                                         question_target_profile__delete_status=False,
-                                         question_target_profile__answer__isnull=False).all().annotate(
+                                         question_target_profile__delete_status=False).all().annotate(
                 question_count=Count('question_target_profile')).order_by('-question_count')[:50],
             many=True)
         return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
