@@ -125,12 +125,11 @@ class RankingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('username', 'profile_image', 'question_count')
+        fields = ('username', 'profile_name', 'profile_image', 'question_count')
 
     def get_question_count(self, obj):
-        return obj.question_target_profile.filter(delete_status=False, answer__isnull=False).count()
+        return obj.question_target_profile.filter(delete_status=False).count()
 
 
 class APNsDeviceSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200, required=True)
-
