@@ -119,7 +119,10 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                                     str(get_client_ip(request)) + ' Error : ' + str(e))
                         return DataInaccuracyError()
 
-            if 'profile_message' in serializer.data:
+            if 'profile_name' in serializer.data and serializer.data['profile_name'] != '':
+                instance.update(profile_name=serializer.data['profile_name'])
+
+            if 'profile_message' in serializer.data and serializer.data['profile_message'] != '':
                 instance.update(profile_message=serializer.data['profile_message'])
 
             if 'profile_image' in serializer.data:
