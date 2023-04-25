@@ -114,6 +114,9 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 else:
                     try:
                         User.objects.filter(username=request.user.username).update(username=serializer.data['username'])
+                        logger.info('Profile Put Success Username : ' + str(
+                            request.user.username) + ' Username : ' + serializer.data['username'] + ' IP : ' +
+                                    str(get_client_ip(request)))
                     except Exception as e:
                         logger.info('Profile Put Failed Username : ' + str(request.user.username) + ' IP : ' +
                                     str(get_client_ip(request)) + ' Error : ' + str(e))
@@ -121,9 +124,15 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 
             if 'profile_name' in serializer.data and serializer.data['profile_name'] != '':
                 instance.update(profile_name=serializer.data['profile_name'])
+                logger.info('Profile Put Success Username : ' + str(
+                    request.user.username) + ' PN : ' + serializer.data['profile_name'] + ' IP : ' +
+                            str(get_client_ip(request)))
 
             if 'profile_message' in serializer.data and serializer.data['profile_message'] != '':
                 instance.update(profile_message=serializer.data['profile_message'])
+                logger.info('Profile Put Success Username : ' + str(
+                    request.user.username) + ' PM : ' + serializer.data['profile_message'] + ' IP : ' +
+                            str(get_client_ip(request)))
 
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
@@ -131,6 +140,9 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 image_file.name = str(request.user) + "-time" + str(time.time())
                 image_instance.profile_image = image_file
                 image_instance.save()
+                logger.info('Profile Put Success Username : ' + str(
+                    request.user.username) + ' PI : ' + image_file.name + ' IP : ' +
+                            str(get_client_ip(request)))
 
             if 'background_image' in serializer.data:
                 image_instance = instance.get()
@@ -138,9 +150,10 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                 image_file.name = str(request.user) + "-time" + str(time.time())
                 image_instance.background_image = image_file
                 image_instance.save()
+                logger.info('Profile Put Success Username : ' + str(
+                    request.user.username) + ' BG : ' + image_file.name + ' IP : ' +
+                            str(get_client_ip(request)))
 
-            logger.info('Profile Put Success Username : ' + str(request.user.username) + ' IP : ' +
-                        str(get_client_ip(request)))
             return Response({'info': '수정 완료'}, status=status.HTTP_200_OK)
         else:
             logger.error('Profile Put Failed - Unauthorized IP : ' + str(get_client_ip(request)))
