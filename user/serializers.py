@@ -133,3 +133,4 @@ class RankingSerializer(serializers.ModelSerializer):
 
 class APNsDeviceSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200, required=True)
+

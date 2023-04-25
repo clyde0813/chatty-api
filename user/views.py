@@ -233,3 +233,12 @@ class APNsDeviceView(generics.GenericAPIView):
             query = self.queryset.objects.filter(token=request.data["token"]).all()
             query.delete()
         return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
+
+
+class CurrentUserView(generics.GenericAPIView):
+    queryset = User
+
+    @swagger_auto_schema(tags=['현재 이용자 수'])
+    def get(self, request):
+        current_user = self.queryset.objects.all().count()
+        return Response({'info': current_user}, status=status.HTTP_200_OK)
