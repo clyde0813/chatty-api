@@ -39,7 +39,6 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class EmailVerificationSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
 
     def validate(self, data):
