@@ -69,13 +69,14 @@ class ProfileSerializer(serializers.ModelSerializer):
     background_image = serializers.ImageField(required=False)
     follower = serializers.IntegerField(source='follower.count', required=False)
     following = serializers.IntegerField(source='following.count', required=False)
+    views = serializers.IntegerField(source='viewer.count', required=False)
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
             'background_image',
-            'profile_message', 'follower', 'following')
+            'profile_message', 'follower', 'following', 'views')
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -132,4 +133,3 @@ class RankingSerializer(serializers.ModelSerializer):
 
 class APNsDeviceSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200, required=True)
-

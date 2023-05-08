@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Profile, APNsDevice
+from .models import Profile, Viewer, APNsDevice
 from .serializers import RegisterSerializer, ProfileSerializer, \
     ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer, \
     APNsDeviceSerializer
@@ -93,6 +93,11 @@ class ProfileGetAPIView(generics.GenericAPIView):
             instance = self.queryset.filter(user__username=username).get()
             serializer = ProfileSerializer(instance)
             logger.info('Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
+
+            viewer = None
+            if request.user.is_authenticated:
+                viewer = request.user
+            Viewer.objects.create(profile=instance, user=viewer, access_ip=get_client_ip(request))
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             logger.error('Profile Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
