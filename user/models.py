@@ -24,6 +24,13 @@ class Profile(models.Model):
     recent_access_ip = models.CharField(max_length=20, blank=True)
 
 
+class Viewer(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="viewer")
+    access_ip = models.CharField(max_length=20, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    access_date = models.DateTimeField(auto_now_add=True)
+
+
 class APNsDevice(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.CharField(max_length=200)
