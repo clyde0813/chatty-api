@@ -97,7 +97,15 @@ class ProfileGetAPIView(generics.GenericAPIView):
             viewer = None
             if request.user.is_authenticated:
                 viewer = request.user
-            Viewer.objects.create(profile=instance, user=viewer, access_ip=get_client_ip(request))
+
+            if instance.viewer.filter(user=viewer, access_ip=get_client_ip(request)).exists() and \
+                    datetime.datetime.now() - instance.viewer.filter(user=viewer, access_ip=get_client_ip(
+                request)).last().access_date \
+                    <= datetime.timedelta(minutes=5):
+                pass
+            else:
+                Viewer.objects.create(profile=instance, user=viewer, access_ip=get_client_ip(request))
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             logger.error('Profile Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
