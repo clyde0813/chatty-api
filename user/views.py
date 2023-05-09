@@ -50,6 +50,24 @@ class RegisterView(generics.GenericAPIView):
         else:
             raise DataInaccuracyError()
 
+    @swagger_auto_schema(tags=["회원 탈퇴"])
+    def delete(self, request):
+        if request.user.is_authenticated:
+            num = str(datetime.datetime.now().microsecond)
+            user_object = User.objects.get(username=request.user.username)
+            profile_object = Profile.objects.get(user=request.user)
+            email = "Del%s%s" % (num, user_object.email)
+            username = "Del%s%s" % (num, user_object.username)
+            profile_name = "Del%s%s" % (num, profile_object.profile_name)
+            user_object.email = email
+            user_object.username = username
+            profile_object.profile_name = profile_name
+            user_object.save()
+            profile_object.save()
+            return Response({'info': '탈퇴 완료'}, status=status.HTTP_200_OK)
+        else:
+            raise UnauthorizedError()
+
 
 class EmailVerificationView(generics.GenericAPIView):
     serializer_class = EmailVerificationSerializer

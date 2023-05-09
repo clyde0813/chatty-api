@@ -7,7 +7,7 @@ urlpatterns = [
     path('register', RegisterView.as_view()),
     path('email/verify', EmailVerificationView.as_view()),
     path('login', LoginView.as_view()),
-    # path('logout', LogoutView.as_view()),
+
     path('profile', ProfileUpdateAPIView.as_view()),
     path('profile/<str:username>', ProfileGetAPIView.as_view()),
     path('follow', FollowUserView.as_view()),
