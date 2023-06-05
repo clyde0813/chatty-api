@@ -17,12 +17,35 @@ class AnswerCreateSerializer(serializers.ModelSerializer):
 
 
 class QuestionSerializer(serializers.ModelSerializer):
+    answered_date = serializers.DateTimeField(source='answer.created_date')
     answer_content = serializers.CharField(read_only=True, source='answer.content')
-
+    author = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField()
     class Meta:
         model = Question
         fields = (
-            'pk', 'content', 'created_date', 'answer_content')
+            'pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content')
+
+    def get_profile(self, obj):
+        context = {
+            "username": obj.target_profile.user.username,
+            'profile_name': obj.target_profile.profile_name,
+            "profile_image": obj.target_profile.profile_image.url,
+            "background_image": obj.target_profile.background_image.url
+        }
+        return context
+
+    def get_author(self, obj):
+        if obj.author_profile is not None:
+            context = {
+                'username': obj.author_profile.user.username,
+                'profile_name': obj.author_profile.profile_name,
+                'profile_image': obj.author_profile.profile_image.url,
+                'background_image': obj.author_profile.background_image.url
+            }
+        else:
+            context = None
+        return context
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
@@ -47,15 +70,31 @@ class QuestionRefusedSerializer(serializers.ModelSerializer):
         fields = ('question_id',)
 
 
-class TimelineSerializer(serializers.ModelSerializer):
-    profile = serializers.SerializerMethodField()
-    answer_content = serializers.CharField(source='answer.content')
-
-    class Meta:
-        model = Question
-        fields = ('pk', 'profile', 'content', 'answer_content')
-
-    def get_profile(self, obj):
-        instance = Profile.objects.filter(user=obj.target_profile).get()
-        serializer = ProfileSerializer(instance)
-        return serializer.data
+# class TimelineSerializer(serializers.ModelSerializer):
+#     answered_date = serializers.DateTimeField(source='answer.created_date')
+#     profile = serializers.SerializerMethodField()
+#     author = serializers.SerializerMethodField()
+#     answer_content = serializers.CharField(source='answer.content')
+#
+#     class Meta:
+#         model = Question
+#         fields = ('pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content')
+#
+#     def get_profile(self, obj):
+#         context = {
+#             "username": obj.target_profile.user.username,
+#             "profile_image": obj.target_profile.profile_image.url,
+#             "background_image": obj.target_profile.background_image.url
+#         }
+#         return context
+#
+#     def get_author(self, obj):
+#         if obj.author_profile is not None:
+#             context = {
+#                 "username": obj.author_profile.user.username,
+#                 "profile_image": obj.author_profile.profile_image.url,
+#                 "background_image": obj.author_profile.background_image.url
+#             }
+#         else:
+#             context = None
+#         return context
