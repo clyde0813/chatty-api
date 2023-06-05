@@ -1,5 +1,7 @@
 import datetime
 import logging
+import os
+
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
 from rest_framework.pagination import PageNumberPagination
@@ -7,7 +9,7 @@ from rest_framework.response import Response
 from user.models import Profile, APNsDevice
 from .models import Question, Answer
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRefusedSerializer, \
-    AnswerCreateSerializer, TimelineSerializer
+    AnswerCreateSerializer
 from config.ip_address_gatherer import get_client_ip
 from firebase_admin import messaging
 
@@ -52,14 +54,14 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
         if request.user.is_authenticated:
-            author = request.user
+            author_profile = request.user.profile
         else:
-            author = None
+            author_profile = None
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
             target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
-                                              target_profile=target_profile, author=author)
+                                              target_profile=target_profile, author_profile=author_profile)
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
             APNsDevice_list = list(
@@ -186,7 +188,7 @@ class AnswerCreateAPIView(generics.GenericAPIView):
                 Answer.objects.create(question_id=request.data['question_id'],
                                       author_profile=Profile.objects.get(user=request.user),
                                       author_ip=get_client_ip(request), content=request.data['content'])
-                if question_data.author is not None:
+                if question_data.author_profile is not None:
                     APNsDevice_list = list(
                         APNsDevice.objects.filter(user=question_data.author).values_list('token', flat=True))
                     fcm_token_list = APNsDevice_list
@@ -228,7 +230,9 @@ class TimelineAPIView(generics.GenericAPIView):
                 target_profile__user__in=Profile.objects.filter(user=request.user).get().following.distinct(),
                 answer__isnull=False, delete_status=False, refusal_status=False) \
                 .order_by("-answer__created_date").all()
-            serializer = TimelineSerializer(instance, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            paginator = CustomPagination()
+            result_page = paginator.paginate_queryset(instance, request)
+            serializer = QuestionSerializer(result_page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         else:
             raise UnauthorizedError()

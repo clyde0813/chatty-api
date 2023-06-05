@@ -204,16 +204,16 @@ class FollowUserView(generics.GenericAPIView):
                 request_user = Profile.objects.get(user=request.user)
                 if request.user == target:
                     return DataInaccuracyError()
-                elif target.profile.follower.filter(username=request.user).exists():
-                    target.profile.follower.remove(request.user)
-                    request_user.following.remove(target)
+                elif target.profile.follower.filter(user__username=request.user).exists():
+                    target.profile.follower.remove(request.user.profile)
+                    request_user.following.remove(target.profile)
                     logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
                     return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
                 else:
-                    target.profile.follower.add(request.user)
-                    request_user.following.add(target)
+                    target.profile.follower.add(request.user.profile)
+                    request_user.following.add(target.profile)
                     logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
                     return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
