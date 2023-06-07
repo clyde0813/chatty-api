@@ -68,33 +68,3 @@ class QuestionRefusedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ('question_id',)
-
-
-# class TimelineSerializer(serializers.ModelSerializer):
-#     answered_date = serializers.DateTimeField(source='answer.created_date')
-#     profile = serializers.SerializerMethodField()
-#     author = serializers.SerializerMethodField()
-#     answer_content = serializers.CharField(source='answer.content')
-#
-#     class Meta:
-#         model = Question
-#         fields = ('pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content')
-#
-#     def get_profile(self, obj):
-#         context = {
-#             "username": obj.target_profile.user.username,
-#             "profile_image": obj.target_profile.profile_image.url,
-#             "background_image": obj.target_profile.background_image.url
-#         }
-#         return context
-#
-#     def get_author(self, obj):
-#         if obj.author_profile is not None:
-#             context = {
-#                 "username": obj.author_profile.user.username,
-#                 "profile_image": obj.author_profile.profile_image.url,
-#                 "background_image": obj.author_profile.background_image.url
-#             }
-#         else:
-#             context = None
-#         return context
