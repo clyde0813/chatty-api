@@ -8,6 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from user.models import Profile, APNsDevice
 from .models import Question, Answer
+from user.models import Follow
 from .serializers import QuestionSerializer, QuestionCreateSerializer, QuestionRefusedSerializer, \
     AnswerCreateSerializer
 from config.ip_address_gatherer import get_client_ip
@@ -17,16 +18,9 @@ from Exceptions.UnauthorizedExceptions import *
 from Exceptions.ChattyExceptions import *
 from Exceptions.BaseExceptions import *
 
+from Pagination.CustomPagination import FivePerPagePaginator
+
 logger = logging.getLogger('chatty')
-
-
-class CustomPagination(PageNumberPagination):
-    page_size = 5
-
-    def get_paginated_response(self, data):
-        return Response({'next': self.page.next_page_number() if self.page.has_next() else None,
-                         'previous': self.page.previous_page_number() if self.page.has_previous() else None,
-                         'results': data})
 
 
 class QuestionGetAPIView(generics.GenericAPIView):
@@ -38,7 +32,7 @@ class QuestionGetAPIView(generics.GenericAPIView):
         if Profile.objects.filter(user__username=username).exists():
             instance = self.queryset.filter(target_profile__user__username=username, answer__isnull=False,
                                             refusal_status=False, delete_status=False).order_by('-answer__created_date')
-            paginator = CustomPagination()
+            paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             logger.info('Question Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
@@ -117,7 +111,7 @@ class QuestionArrivedAPIView(generics.GenericAPIView):
         if request.user.is_authenticated:
             instance = self.queryset.filter(target_profile__user=self.request.user, answer__isnull=True,
                                             refusal_status=False, delete_status=False).order_by('-created_date')
-            paginator = CustomPagination()
+            paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             logger.info('Question Unanswered Get Success Username : ' + str(request.user.username) + ' IP : ' +
@@ -137,7 +131,7 @@ class QuestionRefusedAPIView(generics.GenericAPIView):
         if request.user.is_authenticated:
             instance = self.queryset.filter(target_profile__user=self.request.user, answer__isnull=True,
                                             refusal_status=True, delete_status=False).order_by('-refused_date')
-            paginator = CustomPagination()
+            paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             logger.info('Question Rejected Get Success Username : ' + str(request.user.username) + ' IP : ' +
@@ -227,10 +221,10 @@ class TimelineAPIView(generics.GenericAPIView):
     def get(self, request):
         if request.user.is_authenticated:
             instance = self.queryset.filter(
-                target_profile__user__in=Profile.objects.filter(user=request.user).get().following.distinct(),
+                target_profile__in=Follow.objects.filter(follower=request.user.profile).values_list('following'),
                 answer__isnull=False, delete_status=False, refusal_status=False) \
                 .order_by("-answer__created_date").all()
-            paginator = CustomPagination()
+            paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True)
             return paginator.get_paginated_response(serializer.data)

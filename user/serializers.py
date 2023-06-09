@@ -14,6 +14,7 @@ from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
 from Exceptions.RegisterExceptions import *
 
+from .models import Follow
 
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(required=True, min_length=4, max_length=20)
@@ -67,16 +68,17 @@ class ProfileSerializer(serializers.ModelSerializer):
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
     profile_image = serializers.ImageField(required=False)
     background_image = serializers.ImageField(required=False)
-    follower = serializers.IntegerField(source='follower.count', required=False)
-    following = serializers.IntegerField(source='following.count', required=False)
+    follower = serializers.IntegerField(source='following.count', required=False)
+    following = serializers.IntegerField(source='follower.count', required=False)
     views = serializers.IntegerField(source='viewer.count', required=False)
+    follow_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
             'background_image',
-            'profile_message', 'follower', 'following', 'views')
+            'profile_message', 'follower', 'following', 'views', 'follow_status')
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -96,6 +98,20 @@ class ProfileSerializer(serializers.ModelSerializer):
                    'rejected': Question.objects.filter(target_profile__user=obj.user, answer__isnull=True,
                                                        refusal_status=True, delete_status=False).count()}
         return context
+
+    def get_follow_status(self, obj):
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+
+        if user is not None and user.is_authenticated and user.profile == obj:
+            if Follow.objects.filter(follower=user.profile, following= obj).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):

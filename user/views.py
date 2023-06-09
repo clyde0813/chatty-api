@@ -5,15 +5,16 @@ import time
 import logging
 
 from django.contrib.auth.models import User
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.response import Response
 
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Profile, Viewer, APNsDevice
+from .models import Profile, Viewer, APNsDevice, Follow
 from .serializers import RegisterSerializer, ProfileSerializer, \
     ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer, \
     APNsDeviceSerializer
@@ -25,6 +26,8 @@ from Exceptions.FCMException import *
 from Exceptions.RegisterExceptions import *
 from Exceptions.BaseExceptions import *
 from Exceptions.UnauthorizedExceptions import *
+
+from Pagination.CustomPagination import FivePerPagePaginator
 
 logger = logging.getLogger('chatty')
 
@@ -200,20 +203,17 @@ class FollowUserView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         if request.user.is_authenticated:
             if serializer.is_valid():
-                target = get_object_or_404(User, username=serializer.data['username'])
-                request_user = Profile.objects.get(user=request.user)
-                if request.user == target:
+                target_user = get_object_or_404(User, username=serializer.data['username'])
+                if request.user == target_user:
                     return DataInaccuracyError()
-                elif target.profile.follower.filter(user__username=request.user).exists():
-                    target.profile.follower.remove(request.user.profile)
-                    request_user.following.remove(target.profile)
+                elif Follow.objects.filter(follower=request.user.profile, following=target_user.profile).exists():
+                    Follow.objects.filter(follower=request.user.profile, following=target_user.profile).delete()
                     logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
                     return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
                                     status=status.HTTP_200_OK)
                 else:
-                    target.profile.follower.add(request.user.profile)
-                    request_user.following.add(target.profile)
+                    Follow.objects.create(follower=request.user.profile, following=target_user.profile)
                     logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
                                 str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
                     return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
@@ -266,10 +266,20 @@ class APNsDeviceView(generics.GenericAPIView):
         return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
 
 
-class CurrentUserView(generics.GenericAPIView):
-    queryset = User
+class SearchUserView(generics.GenericAPIView):
+    queryset = Profile
+    keyword_param = openapi.Parameter('keyword', openapi.IN_QUERY, description="keyword", type=openapi.TYPE_STRING)
 
-    @swagger_auto_schema(tags=['현재 이용자 수'])
+    @swagger_auto_schema(tags=['유저 검색'], manual_parameters=[keyword_param])
     def get(self, request):
-        current_user = self.queryset.objects.all().count()
-        return Response({'info': current_user}, status=status.HTTP_200_OK)
+        if request.query_params:
+            instance = self.queryset.objects.filter(
+                Q(profile_name__icontains=request.query_params.get('keyword')) |
+                Q(user__username__icontains=request.query_params.get('keyword'))
+            )
+            paginator = FivePerPagePaginator()
+            result_page = paginator.paginate_queryset(instance, request)
+            serializer = ProfileSerializer(result_page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        else:
+            raise DataInaccuracyError
