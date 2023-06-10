@@ -194,6 +194,28 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
             raise UnauthorizedError()
 
 
+class FollowerListView(generics.GenericAPIView):
+    @swagger_auto_schema(tags=['팔로워 목록'])
+    def get(self, request, username):
+        instance = Profile.objects.filter(follower__following__user__username=username).order_by(
+            '-follower__created_date')
+        paginator = FivePerPagePaginator()
+        result_page = paginator.paginate_queryset(instance, request)
+        serializer = ProfileSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class FollowingListView(generics.GenericAPIView):
+    @swagger_auto_schema(tags=['팔로워 목록'])
+    def get(self, request, username):
+        instance = Profile.objects.filter(following__follower__user__username=username).order_by(
+            '-following__created_date')
+        paginator = FivePerPagePaginator()
+        result_page = paginator.paginate_queryset(instance, request)
+        serializer = ProfileSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
     serializer_class = FollowUserSerializer

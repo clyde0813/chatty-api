@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import RegisterView, ProfileGetAPIView, ProfileUpdateAPIView, \
-    FollowUserView, EmailVerificationView, RankingView, LoginView, APNsDeviceView, SearchUserView
+    FollowUserView, FollowerListView, FollowingListView, EmailVerificationView, RankingView, LoginView, APNsDeviceView, \
+    SearchUserView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -12,6 +13,8 @@ urlpatterns = [
 
     path('profile', ProfileUpdateAPIView.as_view()),
     path('profile/<str:username>', ProfileGetAPIView.as_view()),
+    path('profile/<str:username>/followers', FollowerListView.as_view()),
+    path('profile/<str:username>/followings', FollowingListView.as_view()),
     path('follow', FollowUserView.as_view()),
     path('ranking', RankingView.as_view()),
 
