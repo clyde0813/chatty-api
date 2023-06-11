@@ -288,18 +288,27 @@ class APNsDeviceView(generics.GenericAPIView):
         return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
 
 
-class SearchUserView(generics.GenericAPIView):
+class UserSearchView(generics.GenericAPIView):
     queryset = Profile
     keyword_param = openapi.Parameter('keyword', openapi.IN_QUERY, description="keyword", type=openapi.TYPE_STRING)
 
     @swagger_auto_schema(tags=['유저 검색'], manual_parameters=[keyword_param])
     def get(self, request):
         if request.query_params:
+            paginator = FivePerPagePaginator()
+
+            if request.query_params.get('keyword') == "":
+                return Response({
+                    "count": 0,
+                    "next": None,
+                    "previous": None,
+                    "results": []
+                }, status=status.HTTP_200_OK)
+
             instance = self.queryset.objects.filter(
                 Q(profile_name__icontains=request.query_params.get('keyword')) |
                 Q(user__username__icontains=request.query_params.get('keyword'))
             )
-            paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = ProfileSerializer(result_page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
