@@ -104,9 +104,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and hasattr(request, "user"):
             user = request.user
-
-        if user is not None and user.is_authenticated and user.profile == obj:
-            if Follow.objects.filter(follower=user.profile, following= obj).exists():
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if Follow.objects.filter(follower=user.profile, following=obj).exists():
                 return True
             else:
                 return False

@@ -112,7 +112,7 @@ class ProfileGetAPIView(generics.GenericAPIView):
     def get(self, request, username):
         if Profile.objects.filter(user__username=username).exists():
             instance = self.queryset.filter(user__username=username).get()
-            serializer = ProfileSerializer(instance)
+            serializer = ProfileSerializer(instance, context={'request': request})
             logger.info('Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
 
             viewer = None
@@ -201,7 +201,7 @@ class FollowerListView(generics.GenericAPIView):
             '-follower__created_date')
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = ProfileSerializer(result_page, many=True)
+        serializer = ProfileSerializer(result_page, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -212,7 +212,7 @@ class FollowingListView(generics.GenericAPIView):
             '-following__created_date')
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = ProfileSerializer(result_page, many=True)
+        serializer = ProfileSerializer(result_page, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -301,7 +301,7 @@ class SearchUserView(generics.GenericAPIView):
             )
             paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
-            serializer = ProfileSerializer(result_page, many=True)
+            serializer = ProfileSerializer(result_page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
         else:
             raise DataInaccuracyError
