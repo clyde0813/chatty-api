@@ -51,6 +51,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuestionCreateSerializer(serializers.ModelSerializer):
     target_profile = serializers.CharField(required=True)
     content = serializers.CharField(max_length=100, required=True)
+    anonymous_status = serializers.BooleanField(default=True)
 
     def validate(self, data):
         if Profile.objects.filter(user__username=data['target_profile']).exists():
@@ -59,7 +60,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("target_profile", "content",)
+        fields = ("target_profile", "content", "anonymous_status",)
 
 
 class QuestionRefusedSerializer(serializers.ModelSerializer):

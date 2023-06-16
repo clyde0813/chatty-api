@@ -55,7 +55,8 @@ class QuestionCreateAPIView(generics.GenericAPIView):
         if serializer.is_valid():
             target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
-                                              target_profile=target_profile, author_profile=author_profile)
+                                              target_profile=target_profile, author_profile=author_profile,
+                                              anonymous_status=serializer.validated_data['anonymous_status'])
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
                         ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
             APNsDevice_list = list(
