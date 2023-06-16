@@ -36,7 +36,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         return context
 
     def get_author(self, obj):
-        if obj.author_profile is not None:
+        if obj.author_profile is not None and obj.anonymous_status is not True:
             context = {
                 'username': obj.author_profile.user.username,
                 'profile_name': obj.author_profile.profile_name,
