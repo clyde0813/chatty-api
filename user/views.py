@@ -56,6 +56,8 @@ class RegisterView(generics.GenericAPIView):
     @swagger_auto_schema(tags=["회원 탈퇴"])
     def delete(self, request):
         if request.user.is_authenticated:
+            Follow.objects.filter(follower=request.user.profile).all().delete()
+            Follow.objects.filter(following=request.user.profile).all().delete()
             num = str(datetime.datetime.now().microsecond)
             user_object = User.objects.get(username=request.user.username)
             profile_object = Profile.objects.get(user=request.user)
