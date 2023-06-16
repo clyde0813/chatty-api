@@ -48,13 +48,13 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
-        if request.user.is_authenticated:
-            author_profile = request.user.profile
-            anonymous_status = serializer.validated_data['anonymous_status']
-        else:
-            author_profile = None
-            anonymous_status = True
         if serializer.is_valid():
+            if request.user.is_authenticated:
+                author_profile = request.user.profile
+                anonymous_status = serializer.validated_data['anonymous_status']
+            else:
+                author_profile = None
+                anonymous_status = True
             target_profile = Profile.objects.get(user__username=serializer.validated_data['target_profile'])
             question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
                                               target_profile=target_profile, author_profile=author_profile,
