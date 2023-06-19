@@ -1,6 +1,4 @@
 import datetime
-import random
-import re
 import time
 import logging
 
@@ -14,10 +12,10 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Profile, Viewer, APNsDevice, Follow
+from .models import Profile, Viewer, APNsDevice, Follow, BlockedProfile
 from .serializers import RegisterSerializer, ProfileSerializer, \
-    ProfileUpdateSerializer, FollowUserSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer, \
-    APNsDeviceSerializer
+    ProfileUpdateSerializer, EmailVerificationSerializer, RankingSerializer, LoginSerializer, \
+    APNsDeviceSerializer, UsernameVerifySerializer
 
 from config.ip_address_gatherer import get_client_ip
 
@@ -26,6 +24,8 @@ from Exceptions.FCMException import *
 from Exceptions.RegisterExceptions import *
 from Exceptions.BaseExceptions import *
 from Exceptions.UnauthorizedExceptions import *
+
+from Permissions.UserAccessPermission import IsAuthenticated
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
@@ -60,6 +60,7 @@ class RegisterView(generics.GenericAPIView):
             Follow.objects.filter(following=request.user.profile).all().delete()
             num = str(datetime.datetime.now().microsecond)
             user_object = User.objects.get(username=request.user.username)
+            APNsDevice.objects.filter(user=request.user).all().delete()
             profile_object = Profile.objects.get(user=request.user)
             email = "Del%s%s" % (num, user_object.email)
             username = "Del%s%s" % (num, user_object.username)
@@ -67,6 +68,8 @@ class RegisterView(generics.GenericAPIView):
             user_object.email = email
             user_object.username = username
             profile_object.profile_name = profile_name
+            profile_object.is_active = False
+            profile_object.deactivation_date = datetime.datetime.now()
             user_object.save()
             profile_object.save()
             return Response({'info': '탈퇴 완료'}, status=status.HTTP_200_OK)
@@ -107,12 +110,12 @@ class LoginView(generics.GenericAPIView):
 
 
 class ProfileGetAPIView(generics.GenericAPIView):
-    queryset = Profile.objects.all()
+    queryset = Profile.objects.filter(is_active=True)
     serializer_class = ProfileSerializer
 
     @swagger_auto_schema(tags=['프로필 조회'])
     def get(self, request, username):
-        if Profile.objects.filter(user__username=username).exists():
+        if Profile.objects.filter(user__username=username, is_active=True).exists():
             instance = self.queryset.filter(user__username=username).get()
             serializer = ProfileSerializer(instance, context={'request': request})
             logger.info('Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
@@ -197,10 +200,14 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 
 
 class FollowerListView(generics.GenericAPIView):
+    queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
+    serializer_class = ProfileSerializer
+
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
-        instance = Profile.objects.filter(follower__following__user__username=username).order_by(
-            '-follower__created_date')
+        instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).all() \
+            .select_related('follower').order_by('-created_date')
+        instance = [follow.follower for follow in instance]
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
@@ -208,10 +215,14 @@ class FollowerListView(generics.GenericAPIView):
 
 
 class FollowingListView(generics.GenericAPIView):
+    queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
+    serializer_class = ProfileSerializer
+
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
-        instance = Profile.objects.filter(following__follower__user__username=username).order_by(
-            '-following__created_date')
+        instance = self.queryset.filter(follower=Profile.objects.get(user__username=username)).all() \
+            .select_related('following').order_by('-created_date')
+        instance = [follow.following for follow in instance]
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
@@ -220,44 +231,43 @@ class FollowingListView(generics.GenericAPIView):
 
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
-    serializer_class = FollowUserSerializer
+    serializer_class = UsernameVerifySerializer
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(tages=['사용자 팔로우'])
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if request.user.is_authenticated:
-            if serializer.is_valid():
-                target_user = get_object_or_404(User, username=serializer.data['username'])
-                if request.user == target_user:
-                    return DataInaccuracyError()
-                elif Follow.objects.filter(follower=request.user.profile, following=target_user.profile).exists():
-                    Follow.objects.filter(follower=request.user.profile, following=target_user.profile).delete()
-                    logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
-                                str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
-                    return Response({'info': '팔로우취소되었습니다.', 'username': serializer.data['username']},
-                                    status=status.HTTP_200_OK)
-                else:
-                    Follow.objects.create(follower=request.user.profile, following=target_user.profile)
-                    logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
-                                str(serializer.data['username']) + ' IP : ' + str(get_client_ip(request)))
-                    return Response({'info': '팔로우되었습니다.', 'username': serializer.data['username']},
-                                    status=status.HTTP_200_OK)
-            else:
-                return DataInaccuracyError()
+        serializer = self.get_serializer(self, request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
         else:
-            logger.error('Follow Failed - Unauthorized IP : ' + str(get_client_ip(request)))
-            return UnauthorizedError()
+            raise DataInaccuracyError()
+
+        if request.user == User.objects.get(username=data['username']):
+            return DataInaccuracyError()
+        else:
+            target_user = User.objects.get(username=data['username'])
+        if Follow.objects.filter(follower=request.user.profile, following=target_user.profile).exists():
+            Follow.objects.filter(follower=request.user.profile, following=target_user.profile).delete()
+            logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
+                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            return Response({'info': '팔로우취소되었습니다.', 'username': data['username']},
+                            status=status.HTTP_200_OK)
+        else:
+            Follow.objects.create(follower=request.user.profile, following=target_user.profile)
+            logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
+                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            return Response({'info': '팔로우되었습니다.', 'username': data['username']},
+                            status=status.HTTP_200_OK)
 
 
 class RankingView(generics.GenericAPIView):
-    queryset = Profile
+    queryset = Profile.objects.filter(user__is_staff=False, is_active=True)
     serializer_class = RankingSerializer
 
     @swagger_auto_schema(tags=['랭킹'])
     def get(self, request):
         serializer = RankingSerializer(
-            self.queryset.objects.filter(user__is_staff=False,
-                                         question_target_profile__delete_status=False).all().annotate(
+            self.queryset.filter(question_target_profile__delete_status=False).all().annotate(
                 question_count=Count('question_target_profile')).order_by('-question_count')[:50],
             many=True)
         return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
@@ -266,21 +276,18 @@ class RankingView(generics.GenericAPIView):
 class APNsDeviceView(generics.GenericAPIView):
     queryset = APNsDevice
     serializer_class = APNsDeviceSerializer
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(tags=['APNs 기기 등록'])
     def post(self, request):
-        if request.user.is_authenticated:
-            query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
-            if query.exists():
-                return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
-            else:
-                APNsDevice.objects.create(user=request.user, token=request.data["token"])
-                logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
-                    request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
-                return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
+        if query.exists():
+            return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
         else:
-            logger.error('APNs Device Register Failed | IP : ' + str(get_client_ip(request)))
-            raise APNsDeviceRegisterError()
+            APNsDevice.objects.create(user=request.user, token=request.data["token"])
+            logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
+                request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
+            return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(tags=['FCM Token 비활성화'])
     def delete(self, request):
@@ -291,14 +298,14 @@ class APNsDeviceView(generics.GenericAPIView):
 
 
 class UserSearchView(generics.GenericAPIView):
-    queryset = Profile
+    queryset = Profile.objects.filter(is_active=True)
+    serializer_class = ProfileSerializer
     keyword_param = openapi.Parameter('keyword', openapi.IN_QUERY, description="keyword", type=openapi.TYPE_STRING)
 
     @swagger_auto_schema(tags=['유저 검색'], manual_parameters=[keyword_param])
     def get(self, request):
         if request.query_params:
             paginator = FivePerPagePaginator()
-
             if request.query_params.get('keyword') == "":
                 return Response({
                     "count": 0,
@@ -307,12 +314,83 @@ class UserSearchView(generics.GenericAPIView):
                     "results": []
                 }, status=status.HTTP_200_OK)
 
-            instance = self.queryset.objects.filter(
+            instance = self.queryset.filter(
                 Q(profile_name__icontains=request.query_params.get('keyword')) |
                 Q(user__username__icontains=request.query_params.get('keyword'))
-            )
+            ).order_by("-user__last_login")
+            if request.user.is_authenticated:
+                if instance.filter(user=request.user).exists():
+                    instance = instance.exclude(user=request.user)
             result_page = paginator.paginate_queryset(instance, request)
             serializer = ProfileSerializer(result_page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
         else:
             raise DataInaccuracyError
+
+
+class UserBlockView(generics.GenericAPIView):
+    queryset = BlockedProfile.objects.filter(blocked_profile__is_active=True, profile__is_active=True)
+    serializer_class = UsernameVerifySerializer
+    permission_classes = [IsAuthenticated]
+
+    block_param = openapi.Schema(type=openapi.TYPE_OBJECT, description="username", properties={
+        'username': openapi.Schema(type=openapi.TYPE_STRING, description='username')
+    })
+
+    @swagger_auto_schema(tags=['유저 차단 목록'])
+    def get(self, request):
+        instance = self.queryset.filter(profile=request.user.profile).all().select_related('blocked_profile')
+        instance = [data.blocked_profile for data in instance]
+        paginator = FivePerPagePaginator()
+        result_page = paginator.paginate_queryset(instance, request)
+        serializer = ProfileSerializer(result_page, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
+
+    @swagger_auto_schema(tags=['유저 차단'])
+    def post(self, request):
+        serializer = self.get_serializer(self, request.data)
+
+        if serializer.is_valid():
+            data = serializer.validated_data
+        else:
+            raise DataInaccuracyError()
+
+        if request.user.username == data["username"]:
+            raise DataInaccuracyError()
+
+        if self.queryset.filter(profile=request.user.profile,
+                                blocked_profile=Profile.objects.get(user__username=data["username"])).exists():
+            raise DataInaccuracyError()
+
+        BlockedProfile.objects.create(profile=request.user.profile,
+                                      blocked_profile=Profile.objects.get(
+                                          user__username=data["username"]))
+        logger.info(
+            'User Block Success - Profile : ' + str(request.user) + 'Blocked User : ' + str(data['username']) \
+            + ' IP : ' + str(get_client_ip(request)))
+        return Response({'username': data["username"], 'info': '차단 완료'},
+                        status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(tags=['유저 차단 해제'], request_body=block_param)
+    def delete(self, request):
+        serializer = self.get_serializer(self, request.data)
+
+        if serializer.is_valid():
+            data = serializer.validated_data
+        else:
+            raise DataInaccuracyError()
+
+        if request.user.username == data["username"]:
+            raise DataInaccuracyError()
+
+        if self.queryset.filter(profile=request.user.profile,
+                                blocked_profile=Profile.objects.get(user__username=data["username"])).exists():
+            self.queryset.get(profile=request.user.profile,
+                              blocked_profile=Profile.objects.get(
+                                  user__username=data["username"])).delete()
+            logger.info('User Block Delete Success - Profile : ' + str(request.user) + 'Blocked User : ' + str(
+                data['username']) + ' IP : ' + str(get_client_ip(request)))
+            return Response({'username': data["username"], 'info': '차단 해제 완료'},
+                            status=status.HTTP_200_OK)
+        else:
+            raise DataInaccuracyError()

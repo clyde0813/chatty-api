@@ -1,13 +1,14 @@
 from django.urls import path
 from .views import RegisterView, ProfileGetAPIView, ProfileUpdateAPIView, \
     FollowUserView, FollowerListView, FollowingListView, EmailVerificationView, RankingView, LoginView, APNsDeviceView, \
-    UserSearchView
+    UserSearchView, UserBlockView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
     path('register', RegisterView.as_view()),
     path('email/verify', EmailVerificationView.as_view()),
     path('login', LoginView.as_view()),
+    path('block', UserBlockView.as_view()),
 
     path('search', UserSearchView.as_view()),
 

@@ -13,8 +13,10 @@ from chatty.models import Question
 from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
 from Exceptions.RegisterExceptions import *
+from Exceptions.BaseExceptions import DataInaccuracyError
 
 from .models import Follow
+
 
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(required=True, min_length=4, max_length=20)
@@ -125,14 +127,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ('username', 'profile_name', 'profile_message', 'profile_image', 'background_image')
 
 
-class FollowUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=20, required=True)
-
-    class Meta:
-        model = Profile
-        fields = ('username',)
-
-
 class RankingSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', required=False)
     profile_image = serializers.ImageField(required=False)
@@ -148,3 +142,15 @@ class RankingSerializer(serializers.ModelSerializer):
 
 class APNsDeviceSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200, required=True)
+
+
+class UsernameVerifySerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if Profile.objects.filter(user__username=data['username']).exists():
+            return data
+        raise DataInaccuracyError()
+
+    class Meta:
+        fields = ('username',)

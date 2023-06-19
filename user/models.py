@@ -20,6 +20,8 @@ class Profile(models.Model):
                                          scale=0.5)
     profile_message = models.CharField(max_length=50, blank=True, null=True)
     recent_access_ip = models.CharField(max_length=20, blank=True)
+    is_active = models.BooleanField(default=True)
+    deactivation_date = models.DateTimeField(null=True, blank=True)
 
 
 class Follow(models.Model):
@@ -33,6 +35,15 @@ class Viewer(models.Model):
     access_ip = models.CharField(max_length=20, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     access_date = models.DateTimeField(auto_now_add=True)
+
+
+class BlockedProfile(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="blocking_profile")
+    blocked_profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="blocked_profile")
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('profile', 'blocked_profile')
 
 
 class APNsDevice(models.Model):

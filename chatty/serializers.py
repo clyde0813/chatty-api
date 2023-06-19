@@ -7,20 +7,12 @@ from user.models import Profile
 from Exceptions.BaseExceptions import *
 
 
-class AnswerCreateSerializer(serializers.ModelSerializer):
-    question_id = serializers.IntegerField(required=True, write_only=True)
-    content = serializers.CharField(required=True, write_only=True)
-
-    class Meta:
-        model = Answer
-        fields = ('question_id', 'content')
-
-
 class QuestionSerializer(serializers.ModelSerializer):
     answered_date = serializers.DateTimeField(source='answer.created_date')
     answer_content = serializers.CharField(read_only=True, source='answer.content')
     author = serializers.SerializerMethodField()
     profile = serializers.SerializerMethodField()
+
     class Meta:
         model = Question
         fields = (
@@ -49,23 +41,15 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
-    target_profile = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
     content = serializers.CharField(max_length=100, required=True)
     anonymous_status = serializers.BooleanField(default=True)
 
     def validate(self, data):
-        if Profile.objects.filter(user__username=data['target_profile']).exists():
+        if Profile.objects.filter(user__username=data['username']).exists():
             return data
         raise DataInaccuracyError()
 
     class Meta:
         model = Question
-        fields = ("target_profile", "content", "anonymous_status",)
-
-
-class QuestionRefusedSerializer(serializers.ModelSerializer):
-    question_id = serializers.IntegerField(required=True)
-
-    class Meta:
-        model = Question
-        fields = ('question_id',)
+        fields = ("username", "content", "anonymous_status",)
