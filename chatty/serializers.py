@@ -40,7 +40,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         return context
 
 
-class QuestionCreateSerializer(serializers.ModelSerializer):
+class QuestionCreateSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     content = serializers.CharField(max_length=100, required=True)
     anonymous_status = serializers.BooleanField(default=True)
@@ -51,5 +51,4 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
         raise DataInaccuracyError()
 
     class Meta:
-        model = Question
         fields = ("username", "content", "anonymous_status",)

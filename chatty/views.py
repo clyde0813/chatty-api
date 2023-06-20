@@ -59,11 +59,12 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 author_profile = None
                 anonymous_status = True
             target_profile = Profile.objects.get(user__username=serializer.validated_data['username'])
-            question_object = serializer.save(author_ip=get_client_ip(request), refusal_status=False,
-                                              target_profile=target_profile, author_profile=author_profile,
-                                              anonymous_status=anonymous_status)
-            logger.info('Question Post Success Target : ' + str(serializer.validated_data['target_profile']) +
-                        ' Content : ' + str(question_object.content) + ' IP : ' + str(get_client_ip(request)))
+            Question.objects.create(author_ip=get_client_ip(request), refusal_status=False,
+                                    target_profile=target_profile, author_profile=author_profile,
+                                    anonymous_status=anonymous_status, content=serializer.validated_data['content'])
+            logger.info('Question Post Success Target : ' + str(serializer.validated_data['username']) +
+                        ' Content : ' + str(serializer.validated_data['content']) + ' IP : ' + str(
+                get_client_ip(request)))
             APNsDevice_list = list(
                 APNsDevice.objects.filter(user=target_profile.user).values_list('token', flat=True))
             fcm_token_list = APNsDevice_list
@@ -79,12 +80,7 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                 except Exception as e:
                     logger.error('APNs ' + str(e) + '\ntoken : ' + i)
                     APNsDevice.objects.get(token=i).delete()
-            return Response(
-                {'info': '등록완료', 'pk': question_object.pk,
-                 'content': question_object.content,
-                 'created_date': question_object.created_date,
-                 'target_profile': question_object.target_profile.user.username},
-                status=status.HTTP_200_OK)
+            return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
         else:
             logger.error('Question Post Failed IP : ' + str(get_client_ip(request)))
             raise DataInaccuracyError()

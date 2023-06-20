@@ -13,7 +13,7 @@ class PostTestCase(UserTestCase):
         self.question_answer_url = "/api/v1/chatty/answer"
 
         self.question_data = {
-            "target_profile": self.username,
+            "username": self.username,
             "content": "test question"
         }
 
