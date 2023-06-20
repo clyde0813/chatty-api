@@ -195,7 +195,7 @@ class AnswerCreateAPIView(APIView):
                               author_ip=get_client_ip(request), content=request.data['content'])
         if question.author_profile is not None:
             APNsDevice_list = list(
-                APNsDevice.objects.filter(user=question.author).values_list('token', flat=True))
+                APNsDevice.objects.filter(user=question.author_profile.user).values_list('token', flat=True))
             fcm_token_list = APNsDevice_list
             for i in fcm_token_list:
                 try:
