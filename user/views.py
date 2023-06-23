@@ -234,7 +234,11 @@ class FollowUserView(generics.GenericAPIView):
     serializer_class = UsernameVerifySerializer
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(tages=['사용자 팔로우'])
+    username_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+        'username': openapi.Schema(type=openapi.TYPE_STRING, description="username"),
+    })
+
+    @swagger_auto_schema(tages=['팔로우'])
     def post(self, request):
         serializer = self.get_serializer(self, request.data)
         if serializer.is_valid():
@@ -242,23 +246,37 @@ class FollowUserView(generics.GenericAPIView):
         else:
             raise DataInaccuracyError()
 
-        if request.user == User.objects.get(username=data['username']):
-            return DataInaccuracyError()
-        else:
-            target_user = User.objects.get(username=data['username'])
-
-        if Follow.objects.filter(follower=request.user.profile, following=target_user.profile).exists():
-            Follow.objects.filter(follower=request.user.profile, following=target_user.profile).delete()
+        target_profile = Profile.objects.get(user__username=data['username'])
+        if Follow.objects.filter(follower=request.user.profile, following=target_profile).exists():
+            Follow.objects.filter(follower=request.user.profile, following=target_profile).delete()
             logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
                         str(data['username']) + ' IP : ' + str(get_client_ip(request)))
-            return Response({'info': '팔로우취소되었습니다.', 'username': data['username']},
+            return Response({'info': '팔로우 취소 되었습니다.', 'username': data['username']},
                             status=status.HTTP_200_OK)
         else:
-            Follow.objects.create(follower=request.user.profile, following=target_user.profile)
+            Follow.objects.create(follower=request.user.profile, following=target_profile)
             logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
                         str(data['username']) + ' IP : ' + str(get_client_ip(request)))
-            return Response({'info': '팔로우되었습니다.', 'username': data['username']},
+            return Response({'info': '팔로우 되었습니다.', 'username': data['username']},
                             status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(tags=['팔로워 삭제'], request_body=username_params)
+    def delete(self, request):
+        serializer = self.get_serializer(self, request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+        else:
+            raise DataInaccuracyError()
+
+        follower_profile = User.objects.get(username=data['username']).profile
+        if Follow.objects.filter(follower=follower_profile, following=request.user.profile).exists():
+            Follow.objects.filter(follower=follower_profile, following=request.user.profile).all().delete()
+            logger.info('Follower Delete Success Username : ' + str(request.user.username) + ' Target : ' +
+                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            return Response({'info': '팔로워가 삭제 되었습니다.', 'username': data['username']},
+                            status=status.HTTP_200_OK)
+        else:
+            raise DataInaccuracyError()
 
 
 class RankingView(generics.GenericAPIView):
