@@ -8,7 +8,7 @@ from django.core.validators import validate_email
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from user.models import Profile, APNsDevice
+from user.models import Profile, APNsDevice, BlockedProfile
 from chatty.models import Question
 from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
@@ -74,13 +74,15 @@ class ProfileSerializer(serializers.ModelSerializer):
     following = serializers.IntegerField(source='follower.count', required=False)
     views = serializers.IntegerField(source='viewer.count', required=False)
     follow_status = serializers.SerializerMethodField()
+    blocking_state = serializers.SerializerMethodField(source='get_blocking_state')
+    blocked_state = serializers.SerializerMethodField(source='get_blocked_state')
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
             'background_image',
-            'profile_message', 'follower', 'following', 'views', 'follow_status')
+            'profile_message', 'follower', 'following', 'views', 'follow_status', 'blocking_state', 'blocked_state',)
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -108,6 +110,32 @@ class ProfileSerializer(serializers.ModelSerializer):
             user = request.user
         if user is not None and user.is_authenticated and user.profile != obj:
             if Follow.objects.filter(follower=user.profile, following=obj).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_blocking_state(self, obj):
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if BlockedProfile.objects.filter(profile=user.profile, blocked_profile=obj).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_blocked_state(self, obj):
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if BlockedProfile.objects.filter(profile=obj, blocked_profile=user.profile).exists():
                 return True
             else:
                 return False

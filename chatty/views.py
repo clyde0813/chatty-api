@@ -1,6 +1,7 @@
 import datetime
 import logging
 
+from django.conf import settings
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -9,11 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import Profile, APNsDevice
-from .models import Question, Answer
+from .models import Question, Answer, QuestionReport
 from user.models import Follow
 from .serializers import QuestionSerializer, QuestionCreateSerializer
 from config.ip_address_gatherer import get_client_ip
 from firebase_admin import messaging
+
+from tasks.Push.firebase_messaging import fcm_send
 
 from Exceptions.UnauthorizedExceptions import *
 from Exceptions.BaseExceptions import *
@@ -65,21 +68,8 @@ class QuestionCreateAPIView(generics.GenericAPIView):
             logger.info('Question Post Success Target : ' + str(serializer.validated_data['username']) +
                         ' Content : ' + str(serializer.validated_data['content']) + ' IP : ' + str(
                 get_client_ip(request)))
-            APNsDevice_list = list(
-                APNsDevice.objects.filter(user=target_profile.user).values_list('token', flat=True))
-            fcm_token_list = APNsDevice_list
-            for i in fcm_token_list:
-                try:
-                    messaging.send(messaging.Message(
-                        notification=messaging.Notification(
-                            title='Chatty',
-                            body='새로운 질문이 도착했어요!',
-                        ),
-                        token=i,
-                    ))
-                except Exception as e:
-                    logger.error('APNs ' + str(e) + '\ntoken : ' + i)
-                    APNsDevice.objects.get(token=i).delete()
+            fcm_send.delay(ipAddress=get_client_ip(request), username=str(serializer.validated_data['username']),
+                           msg="새로운 질문이 도착했어요!")
             return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
         else:
             logger.error('Question Post Failed IP : ' + str(get_client_ip(request)))
@@ -167,6 +157,24 @@ class QuestionRefuseAPIView(APIView):
                         status=status.HTTP_200_OK)
 
 
+class QuestionReportView(generics.GenericAPIView):
+    queryset = QuestionReport
+    permission_classes = [IsAuthenticated]
+    report_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+        'question_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="question_id"),
+    })
+
+    @swagger_auto_schema(tags=['질문 신고'], request_body=report_params)
+    def post(self, request):
+        if Question.objects.filter(pk=request.data['question_id']).exists():
+            if self.queryset.objects.filter(author=request.user.profile,
+                                            question_id=request.data['question_id']).exists() is False:
+                self.queryset.objects.create(author=request.user.profile, question_id=request.data['question_id'])
+            return Response({'info': '질문 신고 완료'}, status=status.HTTP_200_OK)
+        else:
+            raise DataInaccuracyError()
+
+
 class AnswerCreateAPIView(APIView):
     queryset = Question.objects.filter(answer__isnull=True, refusal_status=False, delete_status=False,
                                        target_profile__is_active=True) \
@@ -194,21 +202,8 @@ class AnswerCreateAPIView(APIView):
                               author_profile=request.user.profile,
                               author_ip=get_client_ip(request), content=request.data['content'])
         if question.author_profile is not None:
-            APNsDevice_list = list(
-                APNsDevice.objects.filter(user=question.author_profile.user).values_list('token', flat=True))
-            fcm_token_list = APNsDevice_list
-            for i in fcm_token_list:
-                try:
-                    messaging.send(messaging.Message(
-                        notification=messaging.Notification(
-                            title='Chatty',
-                            body='답변이 도착했어요!',
-                        ),
-                        token=i,
-                    ))
-                except Exception as e:
-                    logger.error('APNs ' + str(e) + '\ntoken : ' + i)
-                    APNsDevice.objects.get(token=i).delete()
+            fcm_send.delay(ipAddress=get_client_ip(request), username=str(question.author_profile.user.username),
+                           msg="답변이 도착했어요!")
         logger.info('Answer Post Success Username : ' + str(request.user.username) + ' IP : ' +
                     str(get_client_ip(request)))
         return Response({'info': '답변 등록 완료', 'pk': question.pk,

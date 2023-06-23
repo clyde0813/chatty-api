@@ -125,3 +125,4 @@ logs
 Certificate
 /Certificate
 *.p8
+config/celery.py

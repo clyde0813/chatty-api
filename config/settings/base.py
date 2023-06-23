@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'drf_yasg',
+    'celery'
 ]
 
 MIDDLEWARE = [
@@ -142,6 +143,9 @@ CACHES = {
         }
     }
 }
+
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
 
 # # Google mail
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

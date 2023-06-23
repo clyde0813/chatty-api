@@ -246,6 +246,7 @@ class FollowUserView(generics.GenericAPIView):
             return DataInaccuracyError()
         else:
             target_user = User.objects.get(username=data['username'])
+
         if Follow.objects.filter(follower=request.user.profile, following=target_user.profile).exists():
             Follow.objects.filter(follower=request.user.profile, following=target_user.profile).delete()
             logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
@@ -318,9 +319,25 @@ class UserSearchView(generics.GenericAPIView):
                 Q(profile_name__icontains=request.query_params.get('keyword')) |
                 Q(user__username__icontains=request.query_params.get('keyword'))
             ).order_by("-user__last_login")
+            # 로그인 한 경우
             if request.user.is_authenticated:
                 if instance.filter(user=request.user).exists():
                     instance = instance.exclude(user=request.user)
+
+                # 차단한 유저 필터
+                blocking_profiles = BlockedProfile.objects.filter(profile=request.user.profile).all().values_list(
+                    'blocked_profile__profile_name')
+                print("blocking_profiles : ", blocking_profiles)
+                if instance.filter(profile_name__in=blocking_profiles).exists():
+                    instance = instance.exclude(profile_name__in=blocking_profiles)
+
+                # 차단 당한 유저 필터
+                blocked_profiles = BlockedProfile.objects.filter(
+                    blocked_profile=request.user.profile).all().values_list('profile__profile_name')
+                print("blocked_profiles : ", blocked_profiles)
+                if instance.filter(profile_name__in=blocked_profiles).exists():
+                    instance = instance.exclude(profile_name__in=blocked_profiles)
+
             result_page = paginator.paginate_queryset(instance, request)
             serializer = ProfileSerializer(result_page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
@@ -362,9 +379,19 @@ class UserBlockView(generics.GenericAPIView):
                                 blocked_profile=Profile.objects.get(user__username=data["username"])).exists():
             raise DataInaccuracyError()
 
-        BlockedProfile.objects.create(profile=request.user.profile,
-                                      blocked_profile=Profile.objects.get(
-                                          user__username=data["username"]))
+        blocking_profile = request.user.profile
+        blocked_profile = Profile.objects.get(user__username=data["username"])
+
+        BlockedProfile.objects.create(profile=blocking_profile, blocked_profile=blocked_profile)
+
+        # If Blocking Profile follows blocked profile - delete follow object
+        if Follow.objects.filter(follower=blocking_profile, following=blocked_profile).exists():
+            Follow.objects.filter(follower=blocking_profile, following=blocked_profile).all().delete()
+
+        # If Blocked Profile follows Blocking profile - delete follow object
+        if Follow.objects.filter(following=blocking_profile, follower=blocked_profile).exists():
+            Follow.objects.filter(following=blocking_profile, follower=blocked_profile).all().delete()
+
         logger.info(
             'User Block Success - Profile : ' + str(request.user) + 'Blocked User : ' + str(data['username']) \
             + ' IP : ' + str(get_client_ip(request)))
