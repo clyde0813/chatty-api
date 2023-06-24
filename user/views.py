@@ -26,6 +26,7 @@ from Exceptions.BaseExceptions import *
 from Exceptions.UnauthorizedExceptions import *
 
 from Permissions.UserAccessPermission import IsAuthenticated
+from Permissions.UserBlockPermission import IsBlocked
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
@@ -112,6 +113,7 @@ class LoginView(generics.GenericAPIView):
 class ProfileGetAPIView(generics.GenericAPIView):
     queryset = Profile.objects.filter(is_active=True)
     serializer_class = ProfileSerializer
+    permission_classes = [IsBlocked, ]
 
     @swagger_auto_schema(tags=['프로필 조회'])
     def get(self, request, username):
@@ -202,6 +204,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 class FollowerListView(generics.GenericAPIView):
     queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
     serializer_class = ProfileSerializer
+    permission_classes = [IsBlocked, ]
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
@@ -217,6 +220,7 @@ class FollowerListView(generics.GenericAPIView):
 class FollowingListView(generics.GenericAPIView):
     queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
     serializer_class = ProfileSerializer
+    permission_classes = [IsBlocked, ]
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
@@ -232,7 +236,7 @@ class FollowingListView(generics.GenericAPIView):
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
     serializer_class = UsernameVerifySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsBlocked, ]
 
     username_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
         'username': openapi.Schema(type=openapi.TYPE_STRING, description="username"),
@@ -345,14 +349,12 @@ class UserSearchView(generics.GenericAPIView):
                 # 차단한 유저 필터
                 blocking_profiles = BlockedProfile.objects.filter(profile=request.user.profile).all().values_list(
                     'blocked_profile__profile_name')
-                print("blocking_profiles : ", blocking_profiles)
                 if instance.filter(profile_name__in=blocking_profiles).exists():
                     instance = instance.exclude(profile_name__in=blocking_profiles)
 
                 # 차단 당한 유저 필터
                 blocked_profiles = BlockedProfile.objects.filter(
                     blocked_profile=request.user.profile).all().values_list('profile__profile_name')
-                print("blocked_profiles : ", blocked_profiles)
                 if instance.filter(profile_name__in=blocked_profiles).exists():
                     instance = instance.exclude(profile_name__in=blocked_profiles)
 
@@ -404,7 +406,7 @@ class UserBlockView(generics.GenericAPIView):
 
         # If Blocking Profile follows blocked profile - delete follow object
         if Follow.objects.filter(follower=blocking_profile, following=blocked_profile).exists():
-            Follow.objects.filter(follower=blocking_profile, following=blocked_profile).all().delete()
+            Follow.objects.filter(follower=blocking_profile, following=blocked_profFProile).all().delete()
 
         # If Blocked Profile follows Blocking profile - delete follow object
         if Follow.objects.filter(following=blocking_profile, follower=blocked_profile).exists():

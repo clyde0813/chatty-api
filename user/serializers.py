@@ -74,15 +74,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     following = serializers.IntegerField(source='follower.count', required=False)
     views = serializers.IntegerField(source='viewer.count', required=False)
     follow_status = serializers.SerializerMethodField()
-    blocking_state = serializers.SerializerMethodField(source='get_blocking_state')
-    blocked_state = serializers.SerializerMethodField(source='get_blocked_state')
+    block_state = serializers.SerializerMethodField(source='get_block_state')
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
-            'background_image',
-            'profile_message', 'follower', 'following', 'views', 'follow_status', 'blocking_state', 'blocked_state',)
+            'background_image', 'profile_message', 'follower', 'following', 'views', 'follow_status', 'block_state',)
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -116,26 +114,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         else:
             return False
 
-    def get_blocking_state(self, obj):
+    def get_block_state(self, obj):
         user = None
         request = self.context.get("request")
         if request and hasattr(request, "user"):
             user = request.user
         if user is not None and user.is_authenticated and user.profile != obj:
             if BlockedProfile.objects.filter(profile=user.profile, blocked_profile=obj).exists():
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def get_blocked_state(self, obj):
-        user = None
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            user = request.user
-        if user is not None and user.is_authenticated and user.profile != obj:
-            if BlockedProfile.objects.filter(profile=obj, blocked_profile=user.profile).exists():
                 return True
             else:
                 return False

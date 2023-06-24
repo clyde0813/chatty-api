@@ -22,6 +22,7 @@ from Exceptions.UnauthorizedExceptions import *
 from Exceptions.BaseExceptions import *
 
 from Permissions.UserAccessPermission import IsQuestionTarget, IsAuthenticated
+from Permissions.UserBlockPermission import IsBlocked
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
@@ -33,6 +34,7 @@ class QuestionGetAPIView(APIView):
                                        target_profile__is_active=True) \
         .filter(Q(author_profile__isnull=True) | Q(author_profile__is_active=True))
     serializer_class = QuestionSerializer
+    permission_classes = [IsBlocked, ]
 
     @swagger_auto_schema(tags=['질문 리스트'])
     def get(self, request, username):
@@ -40,7 +42,7 @@ class QuestionGetAPIView(APIView):
             instance = self.queryset.filter(target_profile__user__username=username).order_by('-answer__created_date')
             paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
-            serializer = QuestionSerializer(result_page, many=True)
+            serializer = QuestionSerializer(result_page, many=True, context={'request': request})
             logger.info('Question Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
             return paginator.get_paginated_response(serializer.data)
         else:
@@ -50,6 +52,7 @@ class QuestionGetAPIView(APIView):
 
 class QuestionCreateAPIView(generics.GenericAPIView):
     serializer_class = QuestionCreateSerializer
+    permission_classes = [IsBlocked, ]
 
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
