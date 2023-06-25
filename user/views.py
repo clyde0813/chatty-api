@@ -250,7 +250,14 @@ class FollowUserView(generics.GenericAPIView):
         else:
             raise DataInaccuracyError()
 
+        if request.user.username == data['username']:
+            raise DataInaccuracyError()
+
         target_profile = Profile.objects.get(user__username=data['username'])
+
+        if BlockedProfile.objects.filter(profile=request.user.profile, blocked_profile=target_profile).exists():
+            raise DataInaccuracyError()
+
         if Follow.objects.filter(follower=request.user.profile, following=target_profile).exists():
             Follow.objects.filter(follower=request.user.profile, following=target_profile).delete()
             logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
@@ -395,12 +402,12 @@ class UserBlockView(generics.GenericAPIView):
         if request.user.username == data["username"]:
             raise DataInaccuracyError()
 
-        if self.queryset.filter(profile=request.user.profile,
-                                blocked_profile=Profile.objects.get(user__username=data["username"])).exists():
-            raise DataInaccuracyError()
-
         blocking_profile = request.user.profile
         blocked_profile = Profile.objects.get(user__username=data["username"])
+
+        if self.queryset.filter(profile=request.user.profile,
+                                blocked_profile=blocked_profile).exists():
+            raise DataInaccuracyError()
 
         BlockedProfile.objects.create(profile=blocking_profile, blocked_profile=blocked_profile)
 
@@ -409,8 +416,8 @@ class UserBlockView(generics.GenericAPIView):
             Follow.objects.filter(follower=blocking_profile, following=blocked_profile).all().delete()
 
         # If Blocked Profile follows Blocking profile - delete follow object
-        if Follow.objects.filter(following=blocking_profile, follower=blocked_profile).exists():
-            Follow.objects.filter(following=blocking_profile, follower=blocked_profile).all().delete()
+        if Follow.objects.filter(follower=blocked_profile, following=blocking_profile).exists():
+            Follow.objects.filter(follower=blocked_profile, following=blocking_profile).all().delete()
 
         logger.info(
             'User Block Success - Profile : ' + str(request.user) + 'Blocked User : ' + str(data['username']) \
