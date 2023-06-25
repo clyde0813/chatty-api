@@ -406,7 +406,7 @@ class UserBlockView(generics.GenericAPIView):
 
         # If Blocking Profile follows blocked profile - delete follow object
         if Follow.objects.filter(follower=blocking_profile, following=blocked_profile).exists():
-            Follow.objects.filter(follower=blocking_profile, following=blocked_profFProile).all().delete()
+            Follow.objects.filter(follower=blocking_profile, following=blocked_profile).all().delete()
 
         # If Blocked Profile follows Blocking profile - delete follow object
         if Follow.objects.filter(following=blocking_profile, follower=blocked_profile).exists():
