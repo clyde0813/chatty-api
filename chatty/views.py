@@ -23,7 +23,7 @@ from Exceptions.UnauthorizedExceptions import *
 from Exceptions.BaseExceptions import *
 
 from Permissions.UserAccessPermission import IsQuestionTarget, IsAuthenticated
-from Permissions.UserBlockPermission import IsBlocked
+from Permissions.UserBlockPermission import IsBlockedTwoWay
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
@@ -35,7 +35,7 @@ class QuestionGetAPIView(APIView):
                                        target_profile__is_active=True) \
         .filter(Q(author_profile__isnull=True) | Q(author_profile__is_active=True))
     serializer_class = QuestionSerializer
-    permission_classes = [IsBlocked, ]
+    permission_classes = [IsBlockedTwoWay, ]
 
     @swagger_auto_schema(tags=['질문 리스트'])
     def get(self, request, username):
@@ -61,7 +61,7 @@ class QuestionGetAPIView(APIView):
 
 class QuestionCreateAPIView(generics.GenericAPIView):
     serializer_class = QuestionCreateSerializer
-    permission_classes = [IsBlocked, ]
+    permission_classes = [IsBlockedTwoWay, ]
 
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
@@ -237,12 +237,14 @@ class TimelineAPIView(generics.GenericAPIView):
         instance = self.queryset.filter(
             target_profile__in=Follow.objects.filter(follower=request.user.profile).values_list('following')) \
             .order_by("-answer__created_date").all()
+
         blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
             'blocked_profile', flat=True)
         blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
             'profile', flat=True)
         blacklist = list(chain(blocked_list, blocking_list))
         instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
+
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)

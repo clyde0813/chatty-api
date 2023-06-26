@@ -26,7 +26,7 @@ from Exceptions.BaseExceptions import *
 from Exceptions.UnauthorizedExceptions import *
 
 from Permissions.UserAccessPermission import IsAuthenticated
-from Permissions.UserBlockPermission import IsBlocked
+from Permissions.UserBlockPermission import IsBlockedTwoWay, IsBlockedOneWay
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
@@ -113,7 +113,7 @@ class LoginView(generics.GenericAPIView):
 class ProfileGetAPIView(generics.GenericAPIView):
     queryset = Profile.objects.filter(is_active=True)
     serializer_class = ProfileSerializer
-    permission_classes = [IsBlocked, ]
+    permission_classes = [IsBlockedOneWay, ]
 
     @swagger_auto_schema(tags=['프로필 조회'])
     def get(self, request, username):
@@ -204,7 +204,7 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
 class FollowerListView(generics.GenericAPIView):
     queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
     serializer_class = ProfileSerializer
-    permission_classes = [IsBlocked, ]
+    permission_classes = [IsBlockedTwoWay, ]
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
@@ -220,7 +220,7 @@ class FollowerListView(generics.GenericAPIView):
 class FollowingListView(generics.GenericAPIView):
     queryset = Follow.objects.filter(follower__is_active=True, following__is_active=True)
     serializer_class = ProfileSerializer
-    permission_classes = [IsBlocked, ]
+    permission_classes = [IsBlockedTwoWay, ]
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
@@ -236,7 +236,7 @@ class FollowingListView(generics.GenericAPIView):
 class FollowUserView(generics.GenericAPIView):
     queryset = Profile
     serializer_class = UsernameVerifySerializer
-    permission_classes = [IsAuthenticated, IsBlocked, ]
+    permission_classes = [IsAuthenticated, IsBlockedTwoWay, ]
 
     username_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
         'username': openapi.Schema(type=openapi.TYPE_STRING, description="username"),
