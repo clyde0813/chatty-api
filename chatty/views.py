@@ -45,8 +45,9 @@ class QuestionGetAPIView(APIView):
                 blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
                     'blocked_profile', flat=True)
                 blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
-                    'blocked_profile', flat=True)
+                    'profile', flat=True)
                 blacklist = list(chain(blocked_list, blocking_list))
+                print(blacklist)
                 instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
             paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
@@ -239,7 +240,7 @@ class TimelineAPIView(generics.GenericAPIView):
         blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
             'blocked_profile', flat=True)
         blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
-            'blocked_profile', flat=True)
+            'profile', flat=True)
         blacklist = list(chain(blocked_list, blocking_list))
         instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
         paginator = FivePerPagePaginator()
