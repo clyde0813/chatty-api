@@ -236,6 +236,12 @@ class TimelineAPIView(generics.GenericAPIView):
         instance = self.queryset.filter(
             target_profile__in=Follow.objects.filter(follower=request.user.profile).values_list('following')) \
             .order_by("-answer__created_date").all()
+        blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
+            'blocked_profile', flat=True)
+        blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
+            'blocked_profile', flat=True)
+        blacklist = list(chain(blocked_list, blocking_list))
+        instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
