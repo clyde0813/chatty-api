@@ -39,24 +39,6 @@ class QuestionSerializer(serializers.ModelSerializer):
             context = None
         return context
 
-    def to_representation(self, instance):
-        # 질문이 익명일 경우 Pass
-        if instance.anonymous_status is True:
-            return super().to_representation(instance)
-
-        # 로그인한 경우
-        request = self.context.get("request")
-        if request and hasattr(request, "user") and request.user.is_authenticated:
-            user = request.user
-        else:
-            return super().to_representation(instance)
-
-        # 차단한 사람, 차단 당한 사람 모두 필터링
-        if BlockedProfile.objects.filter(profile=user.profile, blocked_profile=instance.author_profile).exists() or \
-                BlockedProfile.objects.filter(profile=instance.author_profile, blocked_profile=user.profile).exists():
-            return None
-        return super().to_representation(instance)
-
 
 class QuestionCreateSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
