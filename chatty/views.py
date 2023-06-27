@@ -27,6 +27,8 @@ from Permissions.UserBlockPermission import IsBlockedTwoWay
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
+from Filter import Block
+
 logger = logging.getLogger('chatty')
 
 
@@ -42,13 +44,7 @@ class QuestionGetAPIView(APIView):
         if Profile.objects.filter(user__username=username).exists():
             instance = self.queryset.filter(target_profile__user__username=username).order_by('-answer__created_date')
             if request.user.is_authenticated:
-                blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
-                    'blocked_profile', flat=True)
-                blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
-                    'profile', flat=True)
-                blacklist = list(chain(blocked_list, blocking_list))
-                print(blacklist)
-                instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
+                instance = Block.question_exclude(request, instance)
             paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True, context={'request': request})
@@ -65,32 +61,35 @@ class QuestionCreateAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
+
         if serializer.is_valid():
-            if request.user.is_authenticated:
-                if BlockedProfile.objects.filter(
-                        Q(profile__user__username=request.data['username'],
-                          blocked_profile=request.user.profile) |
-                        Q(profile=request.user.profile,
-                          blocked_profile__user__username=request.data['username'])).exists():
-                    raise DataInaccuracyError()
-                author_profile = request.user.profile
-                anonymous_status = serializer.validated_data['anonymous_status']
-            else:
-                author_profile = None
-                anonymous_status = True
-            target_profile = Profile.objects.get(user__username=serializer.validated_data['username'])
-            Question.objects.create(author_ip=get_client_ip(request), refusal_status=False,
-                                    target_profile=target_profile, author_profile=author_profile,
-                                    anonymous_status=anonymous_status, content=serializer.validated_data['content'])
-            logger.info('Question Post Success Target : ' + str(serializer.validated_data['username']) +
-                        ' Content : ' + str(serializer.validated_data['content']) + ' IP : ' + str(
-                get_client_ip(request)))
-            fcm_send.delay(ipAddress=get_client_ip(request), username=str(serializer.validated_data['username']),
-                           msg="새로운 질문이 도착했어요!")
-            return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
+            data = serializer.validated_data
         else:
-            logger.error('Question Post Failed IP : ' + str(get_client_ip(request)))
             raise DataInaccuracyError()
+
+        if request.user.is_authenticated:
+            if BlockedProfile.objects.filter(
+                    Q(profile__user__username=request.data['username'],
+                      blocked_profile=request.user.profile) |
+                    Q(profile=request.user.profile,
+                      blocked_profile__user__username=request.data['username'])).exists():
+                raise DataInaccuracyError()
+            author_profile = request.user.profile
+            anonymous_status = serializer.validated_data['anonymous_status']
+        else:
+            author_profile = None
+            anonymous_status = True
+
+        target_profile = Profile.objects.get(user__username=data['username'])
+        Question.objects.create(author_ip=get_client_ip(request), refusal_status=False,
+                                target_profile=target_profile, author_profile=author_profile,
+                                anonymous_status=anonymous_status, content=data['content'])
+        logger.info('Question Post Success Target : ' + str(data['username']) +
+                    ' Content : ' + str(data['content']) + ' IP : ' + str(
+            get_client_ip(request)))
+        fcm_send.delay(ipAddress=get_client_ip(request), username=str(data['username']),
+                       msg="새로운 질문이 도착했어요!")
+        return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(tags=['질문 삭제'])
     def delete(self, request):
@@ -122,6 +121,7 @@ class QuestionArrivedAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['미답변 질문 리스트'])
     def get(self, request):
         instance = self.queryset.filter(target_profile__user=self.request.user).order_by('-created_date')
+        instance = Block.question_exclude(request, instance)
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
@@ -152,6 +152,7 @@ class QuestionRefuseAPIView(APIView):
     def get(self, request):
         instance = self.queryset.filter(target_profile__user=self.request.user, refusal_status=True) \
             .order_by('-refused_date')
+        instance = Block.question_exclude(request, instance)
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
@@ -243,12 +244,7 @@ class TimelineAPIView(generics.GenericAPIView):
             target_profile__in=Follow.objects.filter(follower=request.user.profile).values_list('following')) \
             .order_by("-answer__created_date").all()
 
-        blocked_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
-            'blocked_profile', flat=True)
-        blocking_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
-            'profile', flat=True)
-        blacklist = list(chain(blocked_list, blocking_list))
-        instance = instance.exclude(anonymous_status=False, author_profile__in=blacklist)
+        instance = Block.question_exclude(request, instance)
 
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)

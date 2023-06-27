@@ -30,6 +30,8 @@ from Permissions.UserBlockPermission import IsBlockedTwoWay, IsBlockedOneWay
 
 from Pagination.CustomPagination import FivePerPagePaginator
 
+from Filter import Block
+
 logger = logging.getLogger('chatty')
 
 
@@ -227,6 +229,10 @@ class FollowingListView(generics.GenericAPIView):
         instance = self.queryset.filter(follower=Profile.objects.get(user__username=username)).all() \
             .select_related('following').order_by('-created_date')
         instance = [follow.following for follow in instance]
+
+        if request.user.is_authenticated:
+            instance = Block.user_exclude(request, instance)
+
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
@@ -350,20 +356,8 @@ class UserSearchView(generics.GenericAPIView):
             ).order_by("-user__last_login")
             # 로그인 한 경우
             if request.user.is_authenticated:
-                if instance.filter(user=request.user).exists():
-                    instance = instance.exclude(user=request.user)
-
-                # 차단한 유저 필터
-                blocking_profiles = BlockedProfile.objects.filter(profile=request.user.profile).all().values_list(
-                    'blocked_profile__profile_name')
-                if instance.filter(profile_name__in=blocking_profiles).exists():
-                    instance = instance.exclude(profile_name__in=blocking_profiles)
-
-                # 차단 당한 유저 필터
-                blocked_profiles = BlockedProfile.objects.filter(
-                    blocked_profile=request.user.profile).all().values_list('profile__profile_name')
-                if instance.filter(profile_name__in=blocked_profiles).exists():
-                    instance = instance.exclude(profile_name__in=blocked_profiles)
+                instance = instance.exclude(user=request.user)
+                instance = Block.user_exclude(request, instance)
 
             result_page = paginator.paginate_queryset(instance, request)
             serializer = ProfileSerializer(result_page, many=True, context={'request': request})
