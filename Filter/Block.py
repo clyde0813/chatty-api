@@ -24,13 +24,13 @@ def user_exclude(request, instance):
 
 
 def follow_exclude(request, instance, type):
-    blocking_list = BlockedProfile.objects.filter(profile=request.user.profile).all().values_list(
-        'blocked_profile__profile_name')
-    blocked_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).all().values_list(
-        'profile__profile_name')
+    blocking_list = BlockedProfile.objects.filter(profile=request.user.profile).values_list(
+        'blocked_profile', flat=True)
+    blocked_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).values_list(
+        'profile', flat=True)
     blacklist = list(chain(blocked_list, blocking_list))
     if type == "following":
-        instance = instance.exclude(following__profile_name__in=blacklist)
+        instance = instance.exclude(following__in=blacklist)
     elif type == "follower":
-        instance = instance.exclude(follower__profile_name__in=blacklist)
+        instance = instance.exclude(follower__in=blacklist)
     return instance
