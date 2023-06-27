@@ -213,6 +213,10 @@ class FollowerListView(generics.GenericAPIView):
         instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).all() \
             .select_related('follower').order_by('-created_date')
         instance = [follow.follower for follow in instance]
+
+        if request.user.is_authenticated:
+            instance = Block.user_exclude(request, instance)
+
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
