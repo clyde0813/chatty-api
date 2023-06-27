@@ -61,13 +61,18 @@ class QuestionGetAPIView(APIView):
 
 class QuestionCreateAPIView(generics.GenericAPIView):
     serializer_class = QuestionCreateSerializer
-    permission_classes = [IsBlockedTwoWay, ]
 
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
         if serializer.is_valid():
             if request.user.is_authenticated:
+                if BlockedProfile.objects.filter(
+                        Q(profile__user__username=request.data['username'],
+                          blocked_profile=request.user.profile) |
+                        Q(profile=request.user.profile,
+                          blocked_profile__user__username=request.data['username'])).exists():
+                    raise DataInaccuracyError()
                 author_profile = request.user.profile
                 anonymous_status = serializer.validated_data['anonymous_status']
             else:
