@@ -210,8 +210,7 @@ class FollowerListView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
-        instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).all() \
-            .select_related('follower').order_by('-created_date')
+        instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).order_by('-created_date')
         if request.user.is_authenticated:
             instance = Block.follow_exclude(request, instance, "follower")
         instance = [follow.follower for follow in instance]
@@ -228,8 +227,7 @@ class FollowingListView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
-        instance = self.queryset.filter(follower=Profile.objects.get(user__username=username)).all() \
-            .select_related('following').order_by('-created_date')
+        instance = self.queryset.filter(follower=Profile.objects.get(user__username=username)).order_by('-created_date')
         if request.user.is_authenticated:
             instance = Block.follow_exclude(request, instance, "following")
         instance = [follow.following for follow in instance]
