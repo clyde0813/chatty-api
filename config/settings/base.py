@@ -16,7 +16,6 @@ from pathlib import Path
 import sys, json
 
 from django.core.exceptions import ImproperlyConfigured
-import pymysql
 
 import firebase_admin
 from firebase_admin import credentials
@@ -100,6 +99,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'drf_yasg',
+    'celery'
 ]
 
 MIDDLEWARE = [
@@ -144,6 +144,9 @@ CACHES = {
     }
 }
 
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+
 # # Google mail
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'smtp.gmail.com'
@@ -155,7 +158,6 @@ CACHES = {
 
 AWS_ACCESS_KEY_ID = get_secret('AWS_USER')
 AWS_SECRET_ACCESS_KEY = get_secret('AWS_PASSWORD')
-
 
 cred_path = os.path.join(BASE_DIR, "Certificate/chatty-sns-firebase-adminsdk-f8c5k-2707456d57.json")
 cred = credentials.Certificate(cred_path)

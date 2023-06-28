@@ -1,5 +1,4 @@
 from .base import *
-import pymysql
 
 DEBUG = False
 
@@ -14,8 +13,6 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWS_DEFAULT_ACL = 'public-read'
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-pymysql.install_as_MySQLdb()
 
 DATABASES = {
     'default': {

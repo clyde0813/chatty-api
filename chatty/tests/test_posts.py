@@ -9,11 +9,11 @@ class PostTestCase(UserTestCase):
         self.question_url = "/api/v1/chatty/user/"
         self.question_post_url = "/api/v1/chatty"
         self.question_unanswered_url = "/api/v1/chatty/arrived"
-        self.question_rejected_url = "/api/v1/chatty/refused"
+        self.question_rejected_url = "/api/v1/chatty/refuse"
         self.question_answer_url = "/api/v1/chatty/answer"
 
         self.question_data = {
-            "target_profile": self.username,
+            "username": self.username,
             "content": "test question"
         }
 

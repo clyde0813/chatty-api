@@ -8,11 +8,14 @@ from django.core.validators import validate_email
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from user.models import Profile, APNsDevice
+from user.models import Profile, APNsDevice, BlockedProfile
 from chatty.models import Question
 from config.ip_address_gatherer import get_client_ip
 from Exceptions.LoginExceptions import *
 from Exceptions.RegisterExceptions import *
+from Exceptions.BaseExceptions import DataInaccuracyError
+
+from .models import Follow
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -67,16 +70,17 @@ class ProfileSerializer(serializers.ModelSerializer):
     question_count = serializers.SerializerMethodField('get_question_count', read_only=True)
     profile_image = serializers.ImageField(required=False)
     background_image = serializers.ImageField(required=False)
-    follower = serializers.IntegerField(source='follower.count', required=False)
-    following = serializers.IntegerField(source='following.count', required=False)
+    follower = serializers.IntegerField(source='following.count', required=False)
+    following = serializers.IntegerField(source='follower.count', required=False)
     views = serializers.IntegerField(source='viewer.count', required=False)
+    follow_status = serializers.SerializerMethodField()
+    block_state = serializers.SerializerMethodField(source='get_block_state')
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
-            'background_image',
-            'profile_message', 'follower', 'following', 'views')
+            'background_image', 'profile_message', 'follower', 'following', 'views', 'follow_status', 'block_state',)
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -97,6 +101,32 @@ class ProfileSerializer(serializers.ModelSerializer):
                                                        refusal_status=True, delete_status=False).count()}
         return context
 
+    def get_follow_status(self, obj):
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if Follow.objects.filter(follower=user.profile, following=obj).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_block_state(self, obj):
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if BlockedProfile.objects.filter(profile=user.profile, blocked_profile=obj).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
+
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=10, required=False)
@@ -108,14 +138,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('username', 'profile_name', 'profile_message', 'profile_image', 'background_image')
-
-
-class FollowUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=20, required=True)
-
-    class Meta:
-        model = Profile
-        fields = ('username',)
 
 
 class RankingSerializer(serializers.ModelSerializer):
@@ -133,3 +155,15 @@ class RankingSerializer(serializers.ModelSerializer):
 
 class APNsDeviceSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200, required=True)
+
+
+class UsernameVerifySerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if Profile.objects.filter(user__username=data['username']).exists():
+            return data
+        raise DataInaccuracyError()
+
+    class Meta:
+        fields = ('username',)
