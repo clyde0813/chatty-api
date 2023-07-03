@@ -259,16 +259,16 @@ class QuestionSentView(generics.GenericAPIView):
     @swagger_auto_schema(tags=['보낸 질문'])
     def get(self, request):
         instance = self.queryset.filter(author_profile=request.user.profile).order_by('-created_date')
-        instance = Block.question_exclude(request, instance)
+        instance = Block.question_sent_exclude(request, instance)
 
-        paginatoer = FivePerPagePaginator()
-        result_page = paginatoer.paginate_queryset(instance, request)
+        paginator = FivePerPagePaginator()
+        result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
         logger.info(
             'Question Sent Get Success Username : ' + str(request.user.username) + ' IP : '
             + str(get_client_ip(request))
         )
-        return paginatoer.get_paginated_response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class TimelineAPIView(generics.GenericAPIView):
