@@ -73,3 +73,4 @@ urllib3==1.26.16
 celery
 django-celery-beat
 django-celery-results
+watchtower

@@ -48,7 +48,9 @@ class QuestionGetAPIView(APIView):
             paginator = FivePerPagePaginator()
             result_page = paginator.paginate_queryset(instance, request)
             serializer = QuestionSerializer(result_page, many=True, context={'request': request})
-            logger.info('Question Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
+            logger.info(
+                'Question Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request))
+            )
             return paginator.get_paginated_response(serializer.data)
         else:
             logger.error('Question Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
@@ -84,9 +86,10 @@ class QuestionCreateAPIView(generics.GenericAPIView):
         Question.objects.create(author_ip=get_client_ip(request), refusal_status=False,
                                 target_profile=target_profile, author_profile=author_profile,
                                 anonymous_status=anonymous_status, content=data['content'])
-        logger.info('Question Post Success Target : ' + str(data['username']) +
-                    ' Content : ' + str(data['content']) + ' IP : ' + str(
-            get_client_ip(request)))
+        logger.info(
+            'Question Post Success Target : ' + str(data['username']) + ' Content : ' +
+            str(data['content']) + ' IP : ' + str(get_client_ip(request))
+        )
         fcm_send.delay(ipAddress=get_client_ip(request), username=str(data['username']),
                        msg="새로운 질문이 도착했어요!")
         return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
@@ -98,16 +101,19 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                                                       pk=request.data['question_id'], delete_status=False)
             if question_object.exists() is True:
                 question_object.update(delete_status=True)
-                logger.info('Question Delete Success Username : ' + str(request.user.username) + ' IP : ' +
-                            str(get_client_ip(request)))
+                logger.info('Question Delete Success Username : ' + str(request.user.username) + 'pk : ' + str(
+                    question_object.pk) + ' IP : ' + str(get_client_ip(request)))
                 return Response({'info': '질문 삭제 완료'}, status=status.HTTP_200_OK)
             else:
                 logger.error(
-                    'Question Delete Failed - No Question Username : ' + str(request.user.username) + ' IP : ' +
-                    str(get_client_ip(request)))
+                    'Question Delete Error -  Username : ' + str(request.user.username) + ' IP : ' + 'pk : ' + str(
+                        question_object.pk) + str(get_client_ip(request))
+                )
                 raise DataInaccuracyError()
         else:
-            logger.error('Question Delete Failed - Unauthorized IP : ' + str(get_client_ip(request)))
+            logger.error(
+                'Question Delete Failed - Unauthorized IP : ' + str(get_client_ip(request))
+            )
             raise UnauthorizedError()
 
 
@@ -125,8 +131,10 @@ class QuestionArrivedAPIView(generics.GenericAPIView):
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
-        logger.info('Question Unanswered Get Success Username : ' + str(request.user.username) + ' IP : ' +
-                    str(get_client_ip(request)))
+        logger.info(
+            'Question Unanswered Get Success Username : ' + str(request.user.username) + ' IP : ' +
+            str(get_client_ip(request))
+        )
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -156,8 +164,10 @@ class QuestionRefuseAPIView(APIView):
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
-        logger.info('Question Rejected Get Success Username : ' + str(request.user.username) + ' IP : ' +
-                    str(get_client_ip(request)))
+        logger.info(
+            'Question Refused Get Success Username : ' + str(request.user.username) + ' IP : ' +
+            str(get_client_ip(request))
+        )
         return paginator.get_paginated_response(serializer.data)
 
     @swagger_auto_schema(tags=['질문 거절'], request_body=refuse_params)
@@ -166,8 +176,10 @@ class QuestionRefuseAPIView(APIView):
         question.refusal_status = True
         question.refused_date = datetime.datetime.now()
         question.save()
-        logger.info('Question Rejected Post Success Username : ' + str(request.user.username) + ' IP : ' +
-                    str(get_client_ip(request)))
+        logger.info(
+            'Question Refuse Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request))
+            + 'pk : ' + str(question.pk) + str(get_client_ip(request))
+        )
         return Response({'info': '질문 거절 완료', 'pk': question.pk,
                          'content': question.content,
                          'created_date': question.created_date,
@@ -188,6 +200,10 @@ class QuestionReportView(generics.GenericAPIView):
             if self.queryset.objects.filter(author=request.user.profile,
                                             question_id=request.data['question_id']).exists() is False:
                 self.queryset.objects.create(author=request.user.profile, question_id=request.data['question_id'])
+                logger.info(
+                    'Question Report Success Username : ' + str(request.user.username) + 'pk : ' +
+                    str(request.data['question_id']) + ' IP :' + str(get_client_ip(request))
+                )
             return Response({'info': '질문 신고 완료'}, status=status.HTTP_200_OK)
         else:
             raise DataInaccuracyError()
@@ -222,13 +238,37 @@ class AnswerCreateAPIView(APIView):
         if question.author_profile is not None:
             fcm_send.delay(ipAddress=get_client_ip(request), username=str(question.author_profile.user.username),
                            msg="답변이 도착했어요!")
-        logger.info('Answer Post Success Username : ' + str(request.user.username) + ' IP : ' +
-                    str(get_client_ip(request)))
+        logger.info(
+            'Answer Success Username : ' + str(request.user.username) + ' pk : ' + str(question.pk) + ' IP : ' +
+            str(get_client_ip(request))
+        )
         return Response({'info': '답변 등록 완료', 'pk': question.pk,
                          'content': question.content,
                          'created_date': question.created_date,
                          'target_profile': question.target_profile.user.username},
                         status=status.HTTP_200_OK)
+
+
+# 2023.07.03
+class QuestionSentView(generics.GenericAPIView):
+    queryset = Question.objects.filter(delete_status=False, target_profile__is_active=True) \
+        .filter(Q(author_profile__isnull=True) | Q(author_profile__is_active=True))
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=['보낸 질문'])
+    def get(self, request):
+        instance = self.queryset.filter(author_profile=request.user.profile).order_by('-created_date')
+        instance = Block.question_exclude(request, instance)
+
+        paginatoer = FivePerPagePaginator()
+        result_page = paginatoer.paginate_queryset(instance, request)
+        serializer = QuestionSerializer(result_page, many=True)
+        logger.info(
+            'Question Sent Get Success Username : ' + str(request.user.username) + ' IP : '
+            + str(get_client_ip(request))
+        )
+        return paginatoer.get_paginated_response(serializer.data)
 
 
 class TimelineAPIView(generics.GenericAPIView):
@@ -249,4 +289,7 @@ class TimelineAPIView(generics.GenericAPIView):
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = QuestionSerializer(result_page, many=True)
+        logger.info(
+            'Timeline Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request))
+        )
         return paginator.get_paginated_response(serializer.data)

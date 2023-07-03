@@ -16,7 +16,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = (
-            'pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content')
+            'pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content', 'refusal_status', )
 
     def get_profile(self, obj):
         context = {
