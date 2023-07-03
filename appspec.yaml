@@ -1,0 +1,17 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ubuntu/chatty-dev
+permissions:
+  - object: /home/ubuntu/chatty-dev
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+
+hooks:
+  AfterInstall:
+    - location: scripts/after-chatty-dev-deploy.sh
+      timeout: 1000
+      runas: ubuntu
