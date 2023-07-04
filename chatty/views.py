@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import Profile, APNsDevice
-from .models import Question, Answer, QuestionReport
+from .models import Question, Answer, QuestionReport, QuestionLike
 from user.models import Follow, BlockedProfile
 from .serializers import QuestionSerializer, QuestionCreateSerializer
 from config.ip_address_gatherer import get_client_ip
@@ -130,7 +130,7 @@ class QuestionArrivedAPIView(generics.GenericAPIView):
         instance = Block.question_exclude(request, instance)
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = QuestionSerializer(result_page, many=True)
+        serializer = QuestionSerializer(result_page, many=True, context={'request': request})
         logger.info(
             'Question Unanswered Get Success Username : ' + str(request.user.username) + ' IP : ' +
             str(get_client_ip(request))
@@ -163,7 +163,7 @@ class QuestionRefuseAPIView(APIView):
         instance = Block.question_exclude(request, instance)
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = QuestionSerializer(result_page, many=True)
+        serializer = QuestionSerializer(result_page, many=True, context={'request': request})
         logger.info(
             'Question Refused Get Success Username : ' + str(request.user.username) + ' IP : ' +
             str(get_client_ip(request))
@@ -263,12 +263,43 @@ class QuestionSentView(generics.GenericAPIView):
 
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = QuestionSerializer(result_page, many=True)
+        serializer = QuestionSerializer(result_page, many=True, context={'request': request})
         logger.info(
             'Question Sent Get Success Username : ' + str(request.user.username) + ' IP : '
             + str(get_client_ip(request))
         )
         return paginator.get_paginated_response(serializer.data)
+
+
+class QuestionLikeView(generics.GenericAPIView):
+    queryset = QuestionLike.objects
+    permission_classes = [IsAuthenticated]
+
+    like_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+        'question_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="question_id"),
+    })
+
+    @swagger_auto_schema(tags=['질문 좋아요'], request_body=like_params)
+    def post(self, request):
+        if 'question_id' not in request.data or Question.objects.filter(
+                pk=request.data['question_id']).exists() is False:
+            raise DataInaccuracyError()
+
+        # 좋아요가 존재하는 경우
+        if self.queryset.filter(question_id=request.data['question_id'], author=request.user.profile).exists():
+            self.queryset.filter(question_id=request.data['question_id'], author=request.user.profile).delete()
+            logger.info(
+                'Question Like Post Success Username : ' + str(request.user.username) + ' IP : '
+                + str(get_client_ip(request))
+            )
+            return Response({'info': '질문 좋아요 취소 완료'}, status=status.HTTP_200_OK)
+        else:
+            QuestionLike.objects.create(question_id=request.data['question_id'], author=request.user.profile)
+            logger.info(
+                'Question Like Post Success Username : ' + str(request.user.username) + ' IP : '
+                + str(get_client_ip(request))
+            )
+            return Response({'info': '질문 좋아요 완료'}, status=status.HTTP_200_OK)
 
 
 class TimelineAPIView(generics.GenericAPIView):
@@ -288,7 +319,7 @@ class TimelineAPIView(generics.GenericAPIView):
 
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
-        serializer = QuestionSerializer(result_page, many=True)
+        serializer = QuestionSerializer(result_page, many=True, context={'request': request})
         logger.info(
             'Timeline Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request))
         )

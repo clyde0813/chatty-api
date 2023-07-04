@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import QuestionGetAPIView, QuestionCreateAPIView, QuestionArrivedAPIView, QuestionReportView, \
-    AnswerCreateAPIView, QuestionRefuseAPIView, QuestionSentView, TimelineAPIView
+    AnswerCreateAPIView, QuestionRefuseAPIView, QuestionSentView, QuestionLikeView, TimelineAPIView
 
 urlpatterns = [
     path('/user/<str:username>', QuestionGetAPIView.as_view()),
@@ -11,6 +11,8 @@ urlpatterns = [
     path('/refuse', QuestionRefuseAPIView.as_view()),
     path('/report', QuestionReportView.as_view()),
     path('/sent', QuestionSentView.as_view()),
+
+    path('/like', QuestionLikeView.as_view()),
 
     path('/timeline', TimelineAPIView.as_view())
 ]

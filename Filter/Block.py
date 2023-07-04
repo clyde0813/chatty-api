@@ -25,11 +25,11 @@ def question_sent_exclude(request, instance):
 
 def user_exclude(request, instance):
     blocking_list = BlockedProfile.objects.filter(profile=request.user.profile).all().values_list(
-        'blocked_profile__profile_name')
+        'blocked_profile__user')
     blocked_list = BlockedProfile.objects.filter(blocked_profile=request.user.profile).all().values_list(
-        'profile__profile_name')
+        'profile__user')
     blacklist = list(chain(blocked_list, blocking_list))
-    instance = instance.exclude(profile_name__in=blacklist)
+    instance = instance.exclude(user__in=blacklist)
     return instance
 
 
