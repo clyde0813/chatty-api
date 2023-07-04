@@ -1,5 +1,4 @@
 amqp==5.1.1
-apns2==0.7.2
 asgiref==3.7.2
 async-timeout==4.0.2
 billiard==4.1.0
@@ -83,7 +82,7 @@ psutil==5.9.5
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pycparser==2.21
-PyJWT==1.7.1
+PyJWT==2.7.0
 pyparsing==3.0.9
 python-crontab==2.7.1
 python-dateutil==2.8.2
