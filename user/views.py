@@ -50,10 +50,17 @@ class RegisterView(generics.GenericAPIView):
             Profile.objects.filter(user=user).update(profile_name=validated_data['profile_name'],
                                                      recent_access_ip=get_client_ip(request))
             token = TokenObtainPairSerializer.get_token(user)
+            logger.info(
+                'Register Success Username : ' + str(validated_data['username']) + ' IP : ' +
+                str(get_client_ip(request))
+            )
             return Response(
                 {'username': user.username, 'refresh_token': str(token), 'access_token': str(token.access_token)},
                 status=status.HTTP_201_CREATED)
         else:
+            logger.error(
+                'Register Error Username : ' + str(request.data['username']) + ' IP : ' + str(get_client_ip(request))
+            )
             raise DataInaccuracyError()
 
     @swagger_auto_schema(tags=["회원 탈퇴"])
@@ -75,6 +82,9 @@ class RegisterView(generics.GenericAPIView):
             profile_object.deactivation_date = datetime.datetime.now()
             user_object.save()
             profile_object.save()
+            logger.info(
+                'Unregister Success Username : ' + str(request.user.username) + ' IP : ' + str(get_client_ip(request))
+            )
             return Response({'info': '탈퇴 완료'}, status=status.HTTP_200_OK)
         else:
             raise UnauthorizedError()
@@ -102,8 +112,10 @@ class LoginView(generics.GenericAPIView):
             validated_data = serializer.validated_data
             User.objects.filter(username=validated_data['user'].username).update(last_login=datetime.datetime.now())
             Profile.objects.filter(user=validated_data['user']).update(recent_access_ip=get_client_ip(request))
-            logger.info('Login Success Username : ' + str(validated_data['user'].username) + ' IP : ' + str(
-                get_client_ip(request)))
+            logger.info(
+                'Login Success Username : ' + str(validated_data['user'].username) + ' IP : ' +
+                str(get_client_ip(request))
+            )
             return Response(
                 {'username': validated_data['user'].username, 'refresh_token': validated_data['refresh_token'],
                  'access_token': validated_data['access_token']},
@@ -122,12 +134,12 @@ class ProfileGetAPIView(generics.GenericAPIView):
         if Profile.objects.filter(user__username=username, is_active=True).exists():
             instance = self.queryset.filter(user__username=username).get()
             serializer = ProfileSerializer(instance, context={'request': request})
-            logger.info('Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
-
+            logger.info(
+                'Profile Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request))
+            )
             viewer = None
             if request.user.is_authenticated:
                 viewer = request.user
-
             if instance.viewer.filter(user=viewer, access_ip=get_client_ip(request)).exists() and \
                     datetime.datetime.now() - instance.viewer.filter(user=viewer, access_ip=get_client_ip(
                 request)).last().access_date \
@@ -138,7 +150,9 @@ class ProfileGetAPIView(generics.GenericAPIView):
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            logger.error('Profile Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request)))
+            logger.error(
+                'Profile Get Failed Username : ' + str(username) + ' IP : ' + str(get_client_ip(request))
+            )
             raise DataInaccuracyError()
 
 
@@ -210,13 +224,17 @@ class FollowerListView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['팔로워 목록'])
     def get(self, request, username):
-        instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).order_by('-created_date')
+        instance = self.queryset.filter(following=Profile.objects.get(user__username=username)).order_by(
+            '-created_date')
         if request.user.is_authenticated:
             instance = Block.follow_exclude(request, instance, "follower")
         instance = [follow.follower for follow in instance]
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
+        logger.info(
+            'FollowerList Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request))
+        )
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -234,6 +252,9 @@ class FollowingListView(generics.GenericAPIView):
         paginator = FivePerPagePaginator()
         result_page = paginator.paginate_queryset(instance, request)
         serializer = ProfileSerializer(result_page, many=True, context={'request': request})
+        logger.info(
+            'FollowingList Get Success Username : ' + str(username) + ' IP : ' + str(get_client_ip(request))
+        )
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -264,14 +285,18 @@ class FollowUserView(generics.GenericAPIView):
 
         if Follow.objects.filter(follower=request.user.profile, following=target_profile).exists():
             Follow.objects.filter(follower=request.user.profile, following=target_profile).delete()
-            logger.info('Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
-                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            logger.info(
+                'Follow Cancel Success Username : ' + str(request.user.username) + ' Target : ' +
+                str(data['username']) + ' IP : ' + str(get_client_ip(request))
+            )
             return Response({'info': '팔로우 취소 되었습니다.', 'username': data['username']},
                             status=status.HTTP_200_OK)
         else:
             Follow.objects.create(follower=request.user.profile, following=target_profile)
-            logger.info('Follow Success Username : ' + str(request.user.username) + ' Target : ' +
-                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            logger.info(
+                'Follow Success Username : ' + str(request.user.username) + ' Target : ' +
+                str(data['username']) + ' IP : ' + str(get_client_ip(request))
+            )
             return Response({'info': '팔로우 되었습니다.', 'username': data['username']},
                             status=status.HTTP_200_OK)
 
@@ -286,8 +311,10 @@ class FollowUserView(generics.GenericAPIView):
         follower_profile = User.objects.get(username=data['username']).profile
         if Follow.objects.filter(follower=follower_profile, following=request.user.profile).exists():
             Follow.objects.filter(follower=follower_profile, following=request.user.profile).all().delete()
-            logger.info('Follower Delete Success Username : ' + str(request.user.username) + ' Target : ' +
-                        str(data['username']) + ' IP : ' + str(get_client_ip(request)))
+            logger.info(
+                'Follower Delete Success Username : ' + str(request.user.username) + ' Target : ' +
+                str(data['username']) + ' IP : ' + str(get_client_ip(request))
+            )
             return Response({'info': '팔로워가 삭제 되었습니다.', 'username': data['username']},
                             status=status.HTTP_200_OK)
         else:

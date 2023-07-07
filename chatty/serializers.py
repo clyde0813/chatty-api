@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from user.serializers import ProfileSerializer
-from .models import Question, Answer
+from .models import Question, Answer, QuestionLike
 from user.models import Profile, BlockedProfile
 
 from Exceptions.BaseExceptions import *
@@ -12,11 +12,14 @@ class QuestionSerializer(serializers.ModelSerializer):
     answer_content = serializers.CharField(read_only=True, source='answer.content')
     author = serializers.SerializerMethodField()
     profile = serializers.SerializerMethodField()
+    like = serializers.IntegerField(source='question_like.count')
+    like_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = (
-            'pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content')
+            'pk', 'created_date', 'answered_date', 'profile', 'author', 'content', 'answer_content', 'refusal_status',
+            'like', 'like_status',)
 
     def get_profile(self, obj):
         context = {
@@ -38,6 +41,21 @@ class QuestionSerializer(serializers.ModelSerializer):
         else:
             context = None
         return context
+
+    def get_like_status(self, obj):
+        user = None
+        request = self.context.get("request")
+
+        if request and hasattr(request, "user"):
+            user = request.user
+
+        if user is not None and user.is_authenticated and user.profile != obj:
+            if QuestionLike.objects.filter(question=obj, author=user.profile).exists():
+                return True
+            else:
+                return False
+        else:
+            return False
 
 
 class QuestionCreateSerializer(serializers.Serializer):

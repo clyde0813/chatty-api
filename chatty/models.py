@@ -29,3 +29,9 @@ class QuestionReport(models.Model):
     author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='question_report_profile')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question_report')
     created_date = models.DateTimeField(auto_now_add=True)
+
+
+class QuestionLike(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question_like')
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='question_like_profile')
+    created_date = models.DateTimeField(auto_now_add=True)
