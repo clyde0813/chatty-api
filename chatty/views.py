@@ -4,6 +4,7 @@ from itertools import chain
 
 from django.conf import settings
 from django.db.models import Q
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
@@ -21,6 +22,7 @@ from tasks.Push.firebase_messaging import fcm_send
 
 from Exceptions.UnauthorizedExceptions import *
 from Exceptions.BaseExceptions import *
+from Exceptions.ChattyExceptions import *
 
 from Permissions.UserAccessPermission import IsQuestionTarget, IsAuthenticated
 from Permissions.UserBlockPermission import IsBlockedTwoWay
@@ -60,6 +62,10 @@ class QuestionGetAPIView(APIView):
 class QuestionCreateAPIView(generics.GenericAPIView):
     serializer_class = QuestionCreateSerializer
 
+    delete_params = openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+        'question_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="question_id"),
+    })
+
     @swagger_auto_schema(tags=['질문 등록'])
     def post(self, request):
         serializer = QuestionCreateSerializer(data=request.data)
@@ -94,27 +100,36 @@ class QuestionCreateAPIView(generics.GenericAPIView):
                        msg="새로운 질문이 도착했어요!")
         return Response({'info': '질문 등록완료'}, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(tags=['질문 삭제'])
+    @swagger_auto_schema(tags=['질문 삭제'], request_body=delete_params)
     def delete(self, request):
         if request.user.is_authenticated:
-            question_object = Question.objects.filter(target_profile__user=request.user,
-                                                      pk=request.data['question_id'], delete_status=False)
-            if question_object.exists() is True:
-                question_object.update(delete_status=True)
-                logger.info('Question Delete Success Username : ' + str(request.user.username) + 'pk : ' + str(
-                    question_object.pk) + ' IP : ' + str(get_client_ip(request)))
-                return Response({'info': '질문 삭제 완료'}, status=status.HTTP_200_OK)
-            else:
-                logger.error(
-                    'Question Delete Error -  Username : ' + str(request.user.username) + ' IP : ' + 'pk : ' + str(
-                        question_object.pk) + str(get_client_ip(request))
-                )
-                raise DataInaccuracyError()
+            question_object = Question.objects.filter(pk=request.data['question_id'], delete_status=False) \
+                .filter(Q(target_profile=request.user.profile) | Q(author_profile=request.user.profile))
         else:
             logger.error(
                 'Question Delete Failed - Unauthorized IP : ' + str(get_client_ip(request))
             )
             raise UnauthorizedError()
+
+        if question_object.exists():
+            pass
+        else:
+            logger.error(
+                'Question Delete Error -  Username : ' + str(request.user.username) + ' IP : ' \
+                + str(get_client_ip(request) + ' pk : ' + str(request.data['question_id']))
+            )
+            raise DataInaccuracyError()
+
+        if question_object.get().author_profile == request.user.profile:
+            if (timezone.now() - question_object.get().created_date).total_seconds() >= 48 * 60 * 60:
+                pass
+            else:
+                raise PostDeletionUnavailableException()
+
+        question_object.update(delete_status=True)
+        logger.info('Question Delete Success Username : ' + str(request.user.username) + 'pk : ' \
+                    + str(request.data['question_id']) + ' IP : ' + str(get_client_ip(request)))
+        return Response({'info': '질문 삭제 완료'}, status=status.HTTP_200_OK)
 
 
 class QuestionArrivedAPIView(generics.GenericAPIView):
