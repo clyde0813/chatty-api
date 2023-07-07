@@ -13,8 +13,8 @@ AWS_REGION = get_secret('AWS_REGION')
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
-AWS_LOG_GROUP = 'Chatty-dev'
-AWS_LOG_STREAM = 'chatty'
+AWS_LOG_GROUP = 'Chatty'
+AWS_LOG_STREAM = 'Chatty-dev'
 
 AWS_DEFAULT_ACL = 'public-read'
 
