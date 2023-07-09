@@ -341,19 +341,13 @@ class APNsDeviceView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['APNs 기기 등록'])
     def post(self, request):
-        if self.queryset.filter(user=request.user, token=request.data["token"]).exists():
-            logger.info(
-                'APNs Device Registered : ' + str(request.user.username) + ' | token : ' \
-                + str(request.data["token"] + ' | IP : ' + str(get_client_ip(request)))
-            )
-            return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
-        else:
-            self.queryset.create(user=request.user, token=request.data["token"])
-            logger.info(
-                'APNs Device Registered : ' + str(request.user.username) + ' | token : ' \
-                + str(request.data["token"] + ' | IP : ' + str(get_client_ip(request)))
-            )
-            return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        self.queryset.filter(token=request.data["token"]).all().delete()
+        self.queryset.create(user=request.user, token=request.data["token"])
+        logger.info(
+            'APNs Device Registered : ' + str(request.user.username) + ' | token : ' \
+            + str(request.data["token"] + ' | IP : ' + str(get_client_ip(request)))
+        )
+        return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(tags=['FCM Token 비활성화'])
     def delete(self, request):
