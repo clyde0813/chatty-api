@@ -28,4 +28,4 @@ def fcm_send(ipAddress, username, msg):
             logger.info("APNs FCM send() success Target : " + str(username) + " IP : " + str(ipAddress))
         except Exception as e:
             logger.error('APNs ' + str(e) + '\ntoken : ' + i)
-            APNsDevice.objects.filter(token=i, user=User.objects.get(username=username)).all().delete()
+            APNsDevice.objects.filter(token=i).all().delete()

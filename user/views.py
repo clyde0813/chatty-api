@@ -352,9 +352,8 @@ class APNsDeviceView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=['FCM Token 비활성화'])
     def delete(self, request):
-        if self.queryset.objects.filter(token=request.data["token"]).exists():
-            query = self.queryset.objects.filter(token=request.data["token"]).all()
-            query.delete()
+        if self.queryset.objects.filter(user=request.user, token=request.data["token"]).exists():
+            self.queryset.objects.filter(token=request.data["token"]).all().delete()
         return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
 
 
