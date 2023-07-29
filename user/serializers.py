@@ -74,13 +74,15 @@ class ProfileSerializer(serializers.ModelSerializer):
     following = serializers.IntegerField(source='follower.count', required=False)
     views = serializers.IntegerField(source='viewer.count', required=False)
     follow_status = serializers.SerializerMethodField()
+    ranking_status = serializers.BooleanField()
     block_state = serializers.SerializerMethodField(source='get_block_state')
 
     class Meta:
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
-            'background_image', 'profile_message', 'follower', 'following', 'views', 'follow_status', 'block_state',)
+            'background_image', 'profile_message', 'follower', 'following', 'views', 'follow_status', 'ranking_status',
+            'block_state',)
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
