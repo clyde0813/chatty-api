@@ -322,16 +322,29 @@ class FollowUserView(generics.GenericAPIView):
 
 
 class RankingView(generics.GenericAPIView):
-    queryset = Profile.objects.filter(user__is_staff=False, is_active=True)
+    queryset = Profile.objects.filter(user__is_staff=False, is_active=True, ranking_status=True)
     serializer_class = RankingSerializer
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(tags=['랭킹'])
     def get(self, request):
         serializer = RankingSerializer(
             self.queryset.filter(question_target_profile__delete_status=False).all().annotate(
-                question_count=Count('question_target_profile')).order_by('-question_count')[:50],
+                question_count=Count('question_target_profile')).order_by('-question_count')[:30],
             many=True)
         return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
+
+
+class RankingToggleView(generics.GenericAPIView):
+    queryset = Profile.objects
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=['랭킹 Toggle'])
+    def post(self, request):
+        instance = self.queryset.filter(user=request.user).get()
+        instance.ranking_status = False if instance.ranking_status else True
+        instance.save()
+        return Response({'info': 'Ranking Toggle 변경 완료'}, status=status.HTTP_200_OK)
 
 
 class APNsDeviceView(generics.GenericAPIView):
