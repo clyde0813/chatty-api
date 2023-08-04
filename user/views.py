@@ -322,40 +322,57 @@ class FollowUserView(generics.GenericAPIView):
 
 
 class RankingView(generics.GenericAPIView):
-    queryset = Profile.objects.filter(user__is_staff=False, is_active=True)
+    queryset = Profile.objects.filter(user__is_staff=False, is_active=True, ranking_status=True)
     serializer_class = RankingSerializer
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(tags=['랭킹'])
     def get(self, request):
         serializer = RankingSerializer(
             self.queryset.filter(question_target_profile__delete_status=False).all().annotate(
-                question_count=Count('question_target_profile')).order_by('-question_count')[:50],
+                question_count=Count('question_target_profile')).order_by('-question_count')[:30],
             many=True)
         return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
 
 
+class RankingToggleView(generics.GenericAPIView):
+    queryset = Profile.objects
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=['랭킹 Toggle'])
+    def post(self, request):
+        instance = self.queryset.filter(user=request.user).get()
+        instance.ranking_status = False if instance.ranking_status else True
+        instance.save()
+        return Response({'info': 'Ranking Toggle 변경 완료'}, status=status.HTTP_200_OK)
+
+
 class APNsDeviceView(generics.GenericAPIView):
-    queryset = APNsDevice
+    queryset = APNsDevice.objects
     serializer_class = APNsDeviceSerializer
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(tags=['APNs 기기 등록'])
     def post(self, request):
-        query = APNsDevice.objects.filter(user=request.user, token=request.data["token"])
-        if query.exists():
-            return Response({'info': 'APNs 정보 갱신 완료'}, status=status.HTTP_200_OK)
-        else:
-            APNsDevice.objects.create(user=request.user, token=request.data["token"])
-            logger.info('APNs Device Registered : ' + str(request.user.username) + ' | token : ' + str(
-                request.data["token"] + ' | IP : ' + str(get_client_ip(request))))
-            return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
+        self.queryset.filter(token=request.data["token"]).all().delete()
+        self.queryset.create(user=request.user, token=request.data["token"])
+        logger.info(
+            'APNs Device Registered : ' + str(request.user.username) + ' | token : ' \
+            + str(request.data["token"] + ' | IP : ' + str(get_client_ip(request)))
+        )
+        return Response({'info': 'APNs 등록 완료'}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(tags=['FCM Token 비활성화'])
     def delete(self, request):
-        if self.queryset.objects.filter(token=request.data["token"]).exists():
-            query = self.queryset.objects.filter(token=request.data["token"]).all()
-            query.delete()
-        return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
+        if self.queryset.filter(user=request.user, token=request.data["token"]).exists():
+            self.queryset.filter(token=request.data["token"]).all().delete()
+            logger.info(
+                'APNs Device Deleted : ' + str(request.user.username) + ' | token : ' \
+                + str(request.data["token"] + ' | IP : ' + str(get_client_ip(request)))
+            )
+            return Response({'info': '기기 FCM 토큰 초기화 완료'}, status=status.HTTP_200_OK)
+        else:
+            raise DataInaccuracyError()
 
 
 class UserSearchView(generics.GenericAPIView):
