@@ -66,6 +66,14 @@ LOGGING = {
         },
     },
     'loggers': {
+        'django': {
+            'level': 'INFO',
+            'handlers': ['watchtower'],
+        },
+        'django.server': {
+            'level': 'INFO',
+            'handlers': ['watchtower'],
+        },
         'chatty': {
             'level': 'INFO',
             'handlers': ['watchtower'],

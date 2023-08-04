@@ -22,7 +22,7 @@ class Profile(models.Model):
     recent_access_ip = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
     deactivation_date = models.DateTimeField(null=True, blank=True)
-    ranking_status = models.BooleanField(default=False)
+    ranking_status = models.BooleanField(default=True)
 
 
 class Follow(models.Model):

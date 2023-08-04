@@ -100,7 +100,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_yasg',
     'celery',
-    'django_celery_beat',
+    'django_apscheduler'
 ]
 
 MIDDLEWARE = [
@@ -147,6 +147,9 @@ CACHES = {
 
 CELERY_BROKER_URL = "redis://localhost:6379"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"  # Default
+SCHEDULER_DEFAULT = True
 
 # # Google mail
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
