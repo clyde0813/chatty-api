@@ -100,7 +100,6 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_yasg',
     'celery',
-    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
