@@ -10,10 +10,10 @@ def updateRankingDaily():
 
 
 app.conf.beat_schedule = {
-    'add-daily': {
-        'task': 'updateRankingDaily',
-        'schedule': 10.0,
-    },
+    # 'add-daily': {
+    #     'task': 'updateRankingDaily',
+    #     'schedule': 10.0,
+    # },
 }
 
 app.conf.timezone = 'Asia/Seoul'

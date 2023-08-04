@@ -64,11 +64,24 @@ LOGGING = {
             'stream_name': AWS_LOG_STREAM,
             'formatter': 'aws',  # use custom format
         },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'aws',
+        },
     },
     'loggers': {
+        'django': {
+            'level': 'ERROR',
+            'handlers': ['watchtower', 'console'],
+        },
+        'django.server': {
+            'level': 'ERROR',
+            'handlers': ['watchtower', 'console'],
+        },
         'chatty': {
             'level': 'INFO',
-            'handlers': ['watchtower'],
+            'handlers': ['watchtower', 'console'],
         },
         # add your other loggers here...
     },
