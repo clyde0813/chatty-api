@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import Profile, Viewer, APNsDevice, Follow, BlockedProfile
@@ -335,7 +336,7 @@ class RankingView(generics.GenericAPIView):
         return Response({"ranking": serializer.data}, status=status.HTTP_200_OK)
 
 
-class RankingToggleView(generics.GenericAPIView):
+class RankingToggleView(APIView):
     queryset = Profile.objects
     permission_classes = [IsAuthenticated]
 
