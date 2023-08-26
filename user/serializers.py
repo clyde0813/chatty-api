@@ -81,8 +81,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = (
             'username', 'profile_name', 'user_id', 'response_rate', 'question_count', 'profile_image',
-            'background_image', 'profile_message', 'follower', 'following', 'views', 'follow_status', 'ranking_status',
-            'block_state',)
+            'background_image', 'profile_message', 'link', 'follower', 'following', 'views', 'follow_status',
+            'ranking_status', 'block_state',)
 
     def get_response_rate(self, obj):
         if Question.objects.filter(
@@ -134,12 +134,13 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=10, required=False)
     profile_name = serializers.CharField(max_length=50, required=False)
     profile_message = serializers.CharField(max_length=50, required=False)
+    link = serializers.URLField(max_length=300, required=False)
     profile_image = serializers.ImageField(required=False)
     background_image = serializers.ImageField(required=False)
 
     class Meta:
         model = Profile
-        fields = ('username', 'profile_name', 'profile_message', 'profile_image', 'background_image')
+        fields = ('username', 'profile_name', 'profile_message', 'link', 'profile_image', 'background_image')
 
 
 class RankingSerializer(serializers.ModelSerializer):

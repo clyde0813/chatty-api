@@ -192,6 +192,12 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                     request.user.username) + ' PM : ' + serializer.data['profile_message'] + ' IP : ' +
                             str(get_client_ip(request)))
 
+            if 'link' in serializer.data and serializer.data['link'] != '':
+                instance.update(link=serializer.data['link'])
+                logger.info('Profile Put Success Username : ' + str(
+                    request.user.username) + ' Link : ' + serializer.data['link'] + ' IP : ' +
+                            str(get_client_ip(request)))
+
             if 'profile_image' in serializer.data:
                 image_instance = instance.get()
                 image_file = request.FILES['profile_image']

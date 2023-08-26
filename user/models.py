@@ -19,6 +19,7 @@ class Profile(models.Model):
     background_image = ResizedImageField(upload_to='background/', default='default_background.png', quality=65,
                                          scale=0.5)
     profile_message = models.CharField(max_length=50, blank=True, null=True)
+    link = models.URLField(max_length=300, blank=True, null=True)
     recent_access_ip = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
     deactivation_date = models.DateTimeField(null=True, blank=True)
