@@ -5,6 +5,6 @@ class PostsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'chatty'
 
-    def ready(self):
-        from .operator import start
-        start()
+    # def ready(self):
+    #     from .operator import start
+    #     start()

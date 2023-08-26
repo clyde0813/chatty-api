@@ -162,11 +162,11 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
     serializer_class = ProfileUpdateSerializer
 
     @swagger_auto_schema(tags=['프로필 업데이트'])
-    def put(self, request):
+    def post(self, request):
         if request.user.is_authenticated:
             instance = self.queryset.filter(user=request.user)
             serializer = ProfileUpdateSerializer(request.data)
-            if 'username' in serializer.data and serializer.data['username'] != '':
+            if 'username' in serializer.data and serializer.data['username'] is not None:
                 if User.objects.filter(username=serializer.data['username']).exists():
                     raise UsernameAlreadyTakenError()
                 else:
@@ -180,19 +180,19 @@ class ProfileUpdateAPIView(generics.GenericAPIView):
                                     str(get_client_ip(request)) + ' Error : ' + str(e))
                         return DataInaccuracyError()
 
-            if 'profile_name' in serializer.data and serializer.data['profile_name'] != '':
+            if 'profile_name' in serializer.data and serializer.data['profile_name'] is not None:
                 instance.update(profile_name=serializer.data['profile_name'])
                 logger.info('Profile Put Success Username : ' + str(
                     request.user.username) + ' PN : ' + serializer.data['profile_name'] + ' IP : ' +
                             str(get_client_ip(request)))
 
-            if 'profile_message' in serializer.data and serializer.data['profile_message'] != '':
+            if 'profile_message' in serializer.data and serializer.data['profile_message'] is not None:
                 instance.update(profile_message=serializer.data['profile_message'])
                 logger.info('Profile Put Success Username : ' + str(
                     request.user.username) + ' PM : ' + serializer.data['profile_message'] + ' IP : ' +
                             str(get_client_ip(request)))
 
-            if 'link' in serializer.data and serializer.data['link'] != '':
+            if 'link' in serializer.data and serializer.data['link'] is not None:
                 instance.update(link=serializer.data['link'])
                 logger.info('Profile Put Success Username : ' + str(
                     request.user.username) + ' Link : ' + serializer.data['link'] + ' IP : ' +
