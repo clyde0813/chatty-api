@@ -40,12 +40,12 @@ Chatty 프로젝트의 주요 목적은 사용자 간의 원활한 커뮤니케�
 -   **회원가입 (POST /user/register/)**: 새로운 사용자 계정을 생성합니다.
 -   **이메일 검증 (POST /user/email/verify)** : 이메일을 검증합니다.
 -   **로그인 (POST /user/login/)**: 기존 사용자의 로그인을 처리합니다.
--   **사용자 정보 조회 (GET /user/profile/<username>/)**: 특정 사용자의 프로필 정보를 조회합니다.
+-   **사용자 정보 조회 (GET /user/profile/(username)/)**: 특정 사용자의 프로필 정보를 조회합니다.
     - `<username>`: 조회하려는 사용자의 고유한 사용자 이름입니다.
 -   **사용자 정보 수정 (PUT /user/profile/)**: 사용자의 프로필 정보를 업데이트합니다.
--   **팔로워 리스트 조회 (GET /user/profile/<username>/followers)**: 특정 사용자의 팔로워 목록을 조회합니다.
+-   **팔로워 리스트 조회 (GET /user/profile/(username)/followers)**: 특정 사용자의 팔로워 목록을 조회합니다.
     - `<username>`: 팔로워 목록을 조회하려는 사용자의 고유한 사용자 이름입니다.
--   **팔로잉 리스트 조회 (GET /user/profile/<username>/followings)**: 특정 사용자가 팔로잉하는 사용자 목록을 조회합니다.
+-   **팔로잉 리스트 조회 (GET /user/profile/(username)/followings)**: 특정 사용자가 팔로잉하는 사용자 목록을 조회합니다.
     - `<username>`: 팔로잉 목록을 조회하려는 사용자의 고유한 사용자 이름입니다.
 -   **팔로우 (POST /user/follow)**: 특정 사용자를 팔로우합니다.
 -   **유저 차단 (POST /user/block)**: 특정 사용자를 차단합니다.
@@ -62,7 +62,7 @@ Chatty 프로젝트의 주요 목적은 사용자 간의 원활한 커뮤니케�
 질문 및 답변 관련 기능은 다음과 같습니다.
 
 -   **질문 생성 (POST /chatty/)**: 새로운 질문을 생성합니다.
--   **특정 유저 질문 조회 (GET /chatty/user/<username>/)**: 특정 사용자에게 온 질문들을 조회합니다.
+-   **특정 유저 질문 조회 (GET /chatty/user/(username)/)**: 특정 사용자에게 온 질문들을 조회합니다.
     - `<username>`: 질문들을 조회하려는 사용자의 고유한 사용자 이름입니다.
 -   **질문 도착 알림 (POST /chatty/arrived)**: 질문이 도착했음을 알립니다.
 -   **질문 거절 (POST /chatty/refuse)**: 질문을 거절합니다.
