@@ -15,7 +15,7 @@ Chatty API는 Django를 기반으로 구축된 백엔드 API 프로젝트입니�
 - 기술 스택 : React, Nginx, Django, RDS, EC2, AWS Route 53, Jenkins, SwiftUI
 - PM, 백엔드, ios 앱 개발(프로토타입), DB, 서버 구축 담당
 - React 개발자(현업), 웹디자이너(현업), ios 개발자와 협업
-- Wireguard를 통한 VPC 접속 보안 관리, Jenkins를 통한 배포 설계 및 구축 완료
+- Wireguard를 통한 VPC 접속 보안 관리, Jenkins를 통한 배포 설계 및 구축 완료 (Github Webhook 활용)
 - 베타 서비스 10일 실적 - MAU 1.5k, 가입자 233명
 - 프로젝트 실패 분석 보고서 : [3분기 분석](https://www.notion.so/3-823fb712fa94496bb9b6f75dcd38aa20?pvs=21)
 - api : https://github.com/clyde0813/chatty-api
@@ -49,12 +49,12 @@ Chatty 프로젝트의 주요 목적은 사용자 간의 원활한 커뮤니케�
     - `<username>`: 팔로잉 목록을 조회하려는 사용자의 고유한 사용자 이름입니다.
 -   **팔로우 (POST /user/follow)**: 특정 사용자를 팔로우합니다.
 -   **유저 차단 (POST /user/block)**: 특정 사용자를 차단합니다.
--   **랭킹 리스트 조회 (GET /user/ranking)**: 사용자 랭킹 목록을 조회합니다.
--   **랭킹 토글 (POST /user/ranking/toggle)**: 사용자 랭킹 상태를 변경합니다.
+-   **랭킹 리스트 조회 (GET /user/ranking)**: 사용자 (질문 수)랭킹 목록을 조회합니다.
+-   **랭킹 토글 (POST /user/ranking/toggle)**: 사용자 랭킹 상태(노출 여부)를 변경합니다.
 -   **FCM 토큰 등록 (POST /user/FCM/ios)**: 사용자의 FCM 토큰을 등록합니다.
 -   **유저 검색 (GET /user/search)**: 사용자들을 검색합니다.
--   **토큰 획득 (POST /user/api/token/)**: JWT 토큰을 발급받습니다.
--   **토큰 새로고침 (POST /user/api/token/refresh/)**: 만료된 JWT 토큰을 갱신합니다.
+-   **토큰 발급 (POST /user/api/token/)**: JWT 토큰을 발급받습니다.
+-   **토큰 갱신 (POST /user/api/token/refresh/)**: 만료된 JWT 토큰을 갱신합니다.
 -   **토큰 검증 (POST /user/api/token/verify/)**: JWT 토큰의 유효성을 검사합니다.
 
 ### 2. 질문 API
@@ -62,10 +62,10 @@ Chatty 프로젝트의 주요 목적은 사용자 간의 원활한 커뮤니케�
 질문 및 답변 관련 기능은 다음과 같습니다.
 
 -   **질문 생성 (POST /chatty/)**: 새로운 질문을 생성합니다.
--   **특정 유저 질문 조회 (GET /chatty/user/(username)/)**: 특정 사용자에게 온 질문들을 조회합니다.
+-   **특정 유저 질문 조회 (GET /chatty/user/(username)/)**: 특정 사용자에게 온 답변이 완료된 질문들을 조회합니다.
     - `<username>`: 질문들을 조회하려는 사용자의 고유한 사용자 이름입니다.
--   **질문 도착 알림 (POST /chatty/arrived)**: 질문이 도착했음을 알립니다.
--   **질문 거절 (POST /chatty/refuse)**: 질문을 거절합니다.
+-   **미답변 질문 모음 (GET /chatty/arrived)**: 개개인의 미답변 질문 리스트를 제공합니다. (본인 확인만 가능)
+-   **질문 거절 모음 (GET /chatty/refuse)**: 개개인의 거절한 질문 리스트를 제공합니다. (본인 확인만 가능)
 -   **질문 신고 (POST /chatty/report)**: 질문을 신고합니다.
 -   **내가 보낸 질문 (GET /chatty/sent)**: 사용자가 보낸 질문 목록을 조회합니다.
 -   **질문 좋아요 (POST /chatty/like)**: 특정 질문에 좋아요를 표시합니다.
@@ -76,54 +76,12 @@ Chatty 프로젝트의 주요 목적은 사용자 간의 원활한 커뮤니케�
 ### 3. 차단 필터 (Filter/Block.py)
 
 -   **차단 필터**: 이 파일에는 사용자가 차단한 사용자들과 차단당한 사용자를 필터링하는 로직이 구현되어 있습니다. 차단 필터는 다음과 같은 상황에서 작동합니다.
-    -   **질문을 보여줄 때**: 사용자가 차단한 사용자의 질문이나, 사용자를 차단한 사용자의 질문은 목록에 표시되지 않습니다.
+    -   **질문을 보여줄 때**: 사용자가 차단한 사용자의 질문이나, 사용자를 차단한 사용자의 질문은 목록에 표시되지 않습니다. (익명 질문 제외 / 하단 설명)
     -   **질문을 보낼 때**: 사용자가 차단한 사용자에게는 질문을 보낼 수 없으며, 사용자를 차단한 사용자에게 질문을 받을 수 없습니다.
     -   **유저 리스트를 보여줄 때**: 사용자가 차단한 사용자나, 사용자를 차단한 사용자는 유저 목록에 표시되지 않습니다.
     -   **팔로워/팔로잉 리스트를 보여줄 때**: 사용자가 차단한 사용자나, 사용자를 차단한 사용자는 팔로워/팔로잉 리스트에 표시되지 않습니다.
     -   **익명 질문의 경우**: A 사용자가 C 사용자를 차단했을 때, B 사용자의 익명 게시판에 C 사용자가 익명으로 작성한 질문을 A에게 보여줄지에 대한 고민이 있었습니다. 익명성 보장을 위해 사용자를 추적할 방법이 없어야 한다는 판단하에, 차단하더라도 익명 질문은 필터링하지 않는 정책을 적용하였고, 이를 백엔드 로직에도 개발 및 반영했습니다.
 
-## 프로젝트 설정 방법
-
-1.  **가상 환경 설정**: 프로젝트를 위한 가상 환경을 생성하고 활성화합니다.
-```
-bash
-    python3 -m venv venv
-    source venv/bin/activate
-    
-```
-2.  **필수 패키지 설치**: `requirements.txt` 파일에 정의된 필수 패키지를 설치합니다.
-```
-bash
-    pip install -r requirements.txt
-    
-```
-3.  **데이터베이스 설정**: `config/settings/base.py` 파일에서 데이터베이스 설정을 구성합니다.
-
-4. **환경변수 설정** : .env 파일을 생성후 환경변수를 작성합니다.
-```
-bash
-    SECRET_KEY= # Django에서 사용되는 시크릿 키
-    DATABASE_URL= # 데이터베이스 URL
-    REDIS_HOST= # 레디스 호스트
-    REDIS_PORT= # 레디스 포트
-    DJANGO_ALLOWED_HOSTS= # 허용할 호스트
-    
-```
-## 실행 방법
-
-1.  **마이그레이션 실행**: 데이터베이스 스키마를 업데이트합니다.
-```
-bash
-    python manage.py makemigrations
-    python manage.py migrate
-    
-```
-2.  **서버 실행**: 개발 서버를 실행합니다.
-```
-bash
-    python manage.py runserver
-    
-```
 ## 추가 정보
 
 -   프로젝트의 모든 API는 RESTful 원칙에 따라 설계되었습니다.
