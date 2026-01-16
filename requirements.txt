@@ -39,7 +39,7 @@ Flask==2.3.2
 Flask-BasicAuth==0.2.0
 Flask-Cors==3.0.10
 flower==2.0.0
-gevent==22.10.2
+gevent==23.9.1
 geventhttpclient==2.0.9
 google-api-core==2.11.0
 google-api-python-client==2.88.0
